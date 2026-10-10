@@ -1,0 +1,12 @@
+[
+  {"id": "Q1", "question": "What is reflection of light?", "expected": "original"},
+  {"id": "Q2", "question": "Define the reflection of light.", "expected": "semantic_duplicate"},
+  {"id": "Q3", "question": "What do you understand by the reflection of light?", "expected": "semantic_duplicate"},
+  {"id": "Q4", "question": "Explain the meaning of light reflection.", "expected": "semantic_duplicate"},
+  {"id": "Q5", "question": "State the laws of reflection of light.", "expected": "different"},
+  {"id": "Q6", "question": "What is the angle of reflection?", "expected": "different"},
+  {"id": "Q7", "question": "The angle of incidence is 30°. What is the angle of reflection?", "expected": "different"},
+  {"id": "Q8", "question": "What is reflection?", "expected": "review"},
+  {"id": "Q9", "question": "What is the difference between regular and diffuse reflection?", "expected": "different"},
+  {"id": "Q10", "question": "Define the reflection of light.", "expected": "exact_duplicate"}
+]

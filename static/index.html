@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DejaQ</title>
+<style>
+:root{--fg:#111;--mut:#666;--line:#ddd;--bg:#fff}
+@media(prefers-color-scheme:dark){:root{--fg:#eee;--mut:#999;--line:#333;--bg:#111}}
+*{box-sizing:border-box}
+body{font:15px/1.5 system-ui,sans-serif;max-width:880px;margin:32px auto;padding:0 16px;color:var(--fg);background:var(--bg)}
+h1{font-size:20px;margin-bottom:2px} h2{font-size:15px;margin:28px 0 8px;border-bottom:1px solid var(--line);padding-bottom:4px}
+input,button{font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:4px;color:var(--fg);background:var(--bg)}
+button{background:var(--fg);color:var(--bg);cursor:pointer;border-color:var(--fg)} button:disabled{opacity:.5;cursor:wait}
+button.ghost{background:transparent;color:var(--fg)}
+.bar{display:flex;gap:8px;flex-wrap:wrap} .bar input[type=text]{flex:1;min-width:200px}
+.row{border:1px solid var(--line);padding:8px 10px;margin:6px 0;border-radius:4px}
+.tag{font-size:12px;border:1px solid var(--line);padding:0 6px;border-radius:3px;margin-right:6px;white-space:nowrap}
+.v{font-weight:600}.mut{color:var(--mut);font-size:13px}.err{color:#b00020}
+table{border-collapse:collapse;width:100%;font-size:13px} td,th{border-bottom:1px solid var(--line);padding:4px 6px;text-align:left}
+.sub{color:var(--mut);margin:0 0 16px}
+</style></head><body>
+<h1>Question duplicate detector</h1>
+<p class="sub">Exact → semantic → LLM-judged. Content only; tags are never used for dedup.</p>
+
+<h2>Check a question</h2>
+<div class="bar"><input id="q" type="text" placeholder="e.g. Define the reflection of light.">
+<button id="bcheck" onclick="check()">Check</button></div>
+<div id="res"></div>
+
+<h2>Generate</h2>
+<div class="bar"><input id="topic" type="text" value="reflection of light">
+<input id="n" type="number" min="1" max="15" value="5" style="width:70px">
+<button id="bgen" onclick="gen()">Generate</button></div>
+<div id="gen"></div>
+
+<h2>Collection (<span id="cnt">0</span>)</h2>
+<div class="bar"><input id="tk" type="text" placeholder="filter by tag key" style="flex:0 1 180px">
+<input id="tv" type="text" placeholder="value (optional)" style="flex:0 1 180px">
+<button class="ghost" onclick="load()">Filter</button></div>
+<div id="list"></div>
+
+<script>
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+async function api(url,body){
+  const r=await fetch(url,body?{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)}:{});
+  const j=await r.json().catch(()=>({}));
+  return {ok:r.ok,status:r.status,data:j};
+}
+const label=v=>esc(v.replace("_"," "));
+function row(q,r,extra=""){
+  const nb=(r.neighbors||[]).map(n=>`<div class="mut">${n.score.toFixed(3)} · ${esc(n.text)}</div>`).join("");
+  return `<div class="row"><span class="v">${label(r.verdict)}</span>
+  <span class="tag">${r.score.toFixed(3)}</span><span class="tag">${esc(r.stage)}</span>${r.numeric_guard?'<span class="tag">numeric guard</span>':""}
+  <br>${esc(q)}${r.match?`<div class="mut">matched: ${esc(r.match)}</div>`:""}
+  ${r.reason?`<div class="mut">judge: ${esc(r.reason)}</div>`:""}${nb?`<details><summary class="mut">neighbors</summary>${nb}</details>`:""}${extra}</div>`;
+}
+async function check(){
+  const q=$("q").value.trim(); if(q.length<3) return;
+  $("bcheck").disabled=true;
+  const {ok,data}=await api("/api/check",{question:q});
+  $("bcheck").disabled=false;
+  if(!ok){$("res").innerHTML=`<div class="row err">Request failed</div>`;return}
+  const canAdd=data.verdict==="different"||data.verdict==="review";
+  const btn=canAdd?`<br><button class="ghost" onclick="add(${data.verdict==="review"})">Add to collection${data.verdict==="review"?" (human override)":""}</button>`:"";
+  $("res").innerHTML=row(q,data,btn);
+}
+async function add(force){
+  const q=$("q").value.trim();
+  const {ok,data}=await api("/api/questions",{question:q,tags:{source:"manual"},force});
+  $("res").innerHTML=ok?`<div class="row">Added.</div>`:`<div class="row err">Not added: ${esc((data.detail||{}).verdict||"error")}</div>`;
+  load();
+}
+async function gen(){
+  $("bgen").disabled=true; $("gen").innerHTML='<p class="mut">Planning subtopics and generating…</p>';
+  const {ok,data}=await api("/api/generate",{topic:$("topic").value,n:+$("n").value});
+  $("bgen").disabled=false;
+  if(!ok){$("gen").innerHTML=`<div class="row err">Request failed (${data.detail?esc(JSON.stringify(data.detail)):"error"})</div>`;return}
+  const plan=(data.plan||[]).length?`<b>Coverage plan</b> <span class="mut">(lower = less covered, targeted first)</span>
+   <table><tr><th>Subtopic</th><th>Coverage</th></tr>${data.plan.map(p=>`<tr><td>${esc(p.subtopic)}</td><td>${p.coverage.toFixed(3)}</td></tr>`).join("")}</table>`:"";
+  $("gen").innerHTML=(data.error?`<div class="row err">${esc(data.error)}</div>`:"")+plan+
+   `<p><b>Accepted (${data.accepted.length})</b></p>`+data.accepted.map(a=>row(a.question,a)).join("")+
+   `<p><b>Rejected (${data.rejected.length})</b></p>`+data.rejected.map(a=>row(a.question,a)).join("");
+  load();
+}
+async function load(){
+  const p=new URLSearchParams(); if($("tk").value) p.set("tag_key",$("tk").value); if($("tv").value) p.set("tag_value",$("tv").value);
+  const {data}=await api("/api/questions?"+p);
+  $("cnt").textContent=data.length;
+  $("list").innerHTML=data.map(x=>`<div class="row">${esc(x.question)}<br>${Object.entries(x.tags).map(([k,v])=>`<span class="tag">${esc(k)}: ${esc(v)}</span>`).join("")}</div>`).join("");
+}
+load();
+</script></body></html>

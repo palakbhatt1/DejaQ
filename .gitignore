@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+.env
+.pytest_cache/
+data/store.json
+eval/results.json
