@@ -1,91 +1,1119 @@
-<!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>DejaQ</title>
-<style>
-:root{--fg:#111;--mut:#666;--line:#ddd;--bg:#fff}
-@media(prefers-color-scheme:dark){:root{--fg:#eee;--mut:#999;--line:#333;--bg:#111}}
-*{box-sizing:border-box}
-body{font:15px/1.5 system-ui,sans-serif;max-width:880px;margin:32px auto;padding:0 16px;color:var(--fg);background:var(--bg)}
-h1{font-size:20px;margin-bottom:2px} h2{font-size:15px;margin:28px 0 8px;border-bottom:1px solid var(--line);padding-bottom:4px}
-input,button{font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:4px;color:var(--fg);background:var(--bg)}
-button{background:var(--fg);color:var(--bg);cursor:pointer;border-color:var(--fg)} button:disabled{opacity:.5;cursor:wait}
-button.ghost{background:transparent;color:var(--fg)}
-.bar{display:flex;gap:8px;flex-wrap:wrap} .bar input[type=text]{flex:1;min-width:200px}
-.row{border:1px solid var(--line);padding:8px 10px;margin:6px 0;border-radius:4px}
-.tag{font-size:12px;border:1px solid var(--line);padding:0 6px;border-radius:3px;margin-right:6px;white-space:nowrap}
-.v{font-weight:600}.mut{color:var(--mut);font-size:13px}.err{color:#b00020}
-table{border-collapse:collapse;width:100%;font-size:13px} td,th{border-bottom:1px solid var(--line);padding:4px 6px;text-align:left}
-.sub{color:var(--mut);margin:0 0 16px}
-</style></head><body>
-<h1>Question duplicate detector</h1>
-<p class="sub">Exact → semantic → LLM-judged. Content only; tags are never used for dedup.</p>
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DejaQ | Intelligent Question Generator & Deduplication Engine</title>
+  <meta name="description" content="DejaQ combines coverage-aware question generation with an independent 3-stage duplicate detector (Exact, Semantic Embedding, Numeric Guard, LLM Judge).">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --font-main: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+      --bg: #090d16;
+      --bg-card: rgba(18, 24, 38, 0.75);
+      --bg-card-hover: rgba(24, 32, 50, 0.85);
+      --bg-input: #0f1523;
+      --border: rgba(255, 255, 255, 0.08);
+      --border-strong: rgba(255, 255, 255, 0.16);
+      --text: #f1f5f9;
+      --text-dim: #94a3b8;
+      --text-muted: #64748b;
+      --primary: #6366f1;
+      --primary-hover: #4f46e5;
+      --primary-light: rgba(99, 102, 241, 0.15);
+      --grad-brand: linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #ec4899 100%);
+      --v-exact: #f59e0b;
+      --v-exact-bg: rgba(245, 158, 11, 0.12);
+      --v-semantic: #ef4444;
+      --v-semantic-bg: rgba(239, 68, 68, 0.12);
+      --v-review: #a855f7;
+      --v-review-bg: rgba(168, 85, 247, 0.12);
+      --v-diff: #10b981;
+      --v-diff-bg: rgba(16, 185, 129, 0.12);
+      --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.25);
+      --shadow-md: 0 8px 30px rgba(0, 0, 0, 0.35);
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --radius-pill: 9999px;
+    }
 
-<h2>Check a question</h2>
-<div class="bar"><input id="q" type="text" placeholder="e.g. Define the reflection of light.">
-<button id="bcheck" onclick="check()">Check</button></div>
-<div id="res"></div>
+    [data-theme="light"] {
+      --bg: #f8fafc;
+      --bg-card: rgba(255, 255, 255, 0.9);
+      --bg-card-hover: #ffffff;
+      --bg-input: #ffffff;
+      --border: rgba(0, 0, 0, 0.08);
+      --border-strong: rgba(0, 0, 0, 0.16);
+      --text: #0f172a;
+      --text-dim: #475569;
+      --text-muted: #94a3b8;
+      --primary: #4f46e5;
+      --primary-hover: #4338ca;
+      --primary-light: rgba(79, 70, 229, 0.1);
+      --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 10px 30px rgba(0, 0, 0, 0.08);
+    }
 
-<h2>Generate</h2>
-<div class="bar"><input id="topic" type="text" value="reflection of light">
-<input id="n" type="number" min="1" max="15" value="5" style="width:70px">
-<button id="bgen" onclick="gen()">Generate</button></div>
-<div id="gen"></div>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--font-main);
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.55;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      transition: background-color 0.25s ease, color 0.25s ease;
+      background-image: 
+        radial-gradient(circle at 15% 10%, rgba(99, 102, 241, 0.08) 0%, transparent 40%),
+        radial-gradient(circle at 85% 20%, rgba(168, 85, 247, 0.08) 0%, transparent 40%);
+      background-attachment: fixed;
+    }
 
-<h2>Collection (<span id="cnt">0</span>)</h2>
-<div class="bar"><input id="tk" type="text" placeholder="filter by tag key" style="flex:0 1 180px">
-<input id="tv" type="text" placeholder="value (optional)" style="flex:0 1 180px">
-<button class="ghost" onclick="load()">Filter</button></div>
-<div id="list"></div>
+    .container {
+      width: 100%;
+      max-width: 1040px;
+      margin: 0 auto;
+      padding: 28px 20px 60px;
+    }
+
+    /* Header */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin-bottom: 28px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--border);
+    }
+    .brand-wrap {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .logo-badge {
+      width: 44px;
+      height: 44px;
+      border-radius: var(--radius-md);
+      background: var(--grad-brand);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-weight: 800;
+      font-size: 22px;
+      box-shadow: 0 4px 16px rgba(99, 102, 241, 0.4);
+    }
+    h1 {
+      font-size: 26px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      background: var(--grad-brand);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .tagline {
+      font-size: 13px;
+      color: var(--text-dim);
+      font-weight: 500;
+    }
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .status-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 6px 12px;
+      border-radius: var(--radius-pill);
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-dim);
+    }
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #10b981;
+      box-shadow: 0 0 8px #10b981;
+    }
+    .dot.offline {
+      background: #f59e0b;
+      box-shadow: 0 0 8px #f59e0b;
+    }
+    .theme-btn {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-pill);
+      color: var(--text);
+      cursor: pointer;
+      padding: 6px 12px;
+      font-size: 13px;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+    .theme-btn:hover {
+      border-color: var(--border-strong);
+      transform: translateY(-1px);
+    }
+
+    /* Tabs Navigation */
+    .tabs-nav {
+      display: flex;
+      gap: 8px;
+      background: var(--bg-card);
+      padding: 6px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border);
+      margin-bottom: 24px;
+      overflow-x: auto;
+    }
+    .tab-btn {
+      flex: 1;
+      min-width: 130px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 10px 16px;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-dim);
+      background: transparent;
+      border: none;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .tab-btn:hover {
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.04);
+    }
+    .tab-btn.active {
+      color: #fff;
+      background: var(--primary);
+      box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
+    }
+
+    /* Tab Panes */
+    .tab-pane {
+      display: none;
+      animation: fadeIn 0.25s ease forwards;
+    }
+    .tab-pane.active {
+      display: block;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Glass Cards */
+    .card {
+      background: var(--bg-card);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      box-shadow: var(--shadow-sm);
+      margin-bottom: 24px;
+    }
+    .card-title {
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .card-desc {
+      font-size: 13px;
+      color: var(--text-dim);
+      margin-bottom: 18px;
+    }
+
+    /* Form Inputs */
+    .input-row {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+    }
+    input[type="text"], input[type="number"], textarea {
+      font-family: var(--font-main);
+      font-size: 14px;
+      color: var(--text);
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 10px 14px;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    input[type="text"]:focus, input[type="number"]:focus, textarea:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px var(--primary-light);
+    }
+    .flex-1 { flex: 1; min-width: 260px; }
+    textarea {
+      width: 100%;
+      resize: vertical;
+      min-height: 120px;
+    }
+
+    /* Buttons */
+    .btn {
+      font-family: var(--font-main);
+      font-size: 14px;
+      font-weight: 600;
+      padding: 10px 18px;
+      border-radius: var(--radius-sm);
+      border: none;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.2s;
+    }
+    .btn:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+    .btn-primary {
+      background: var(--primary);
+      color: #fff;
+      box-shadow: 0 3px 12px rgba(99, 102, 241, 0.3);
+    }
+    .btn-primary:hover:not(:disabled) {
+      background: var(--primary-hover);
+      transform: translateY(-1px);
+    }
+    .btn-ghost {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .btn-ghost:hover:not(:disabled) {
+      background: rgba(255, 255, 255, 0.05);
+      border-color: var(--border-strong);
+    }
+    .btn-danger {
+      background: rgba(239, 68, 68, 0.15);
+      color: #ef4444;
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+    .btn-danger:hover:not(:disabled) {
+      background: #ef4444;
+      color: #fff;
+    }
+
+    /* Samples Chips */
+    .samples-wrap {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      margin-top: 10px;
+      font-size: 12px;
+      color: var(--text-dim);
+    }
+    .chip {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-pill);
+      padding: 4px 10px;
+      font-size: 12px;
+      color: var(--text);
+      cursor: pointer;
+      transition: all 0.18s;
+      user-select: none;
+    }
+    .chip:hover {
+      background: var(--primary-light);
+      border-color: var(--primary);
+      color: #fff;
+    }
+
+    /* Verdict Result Card */
+    .result-card {
+      border-radius: var(--radius-md);
+      padding: 18px;
+      margin-top: 18px;
+      background: var(--bg-card-hover);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-sm);
+      animation: fadeIn 0.25s ease;
+    }
+    .result-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .verdict-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 700;
+      font-size: 13px;
+      padding: 5px 12px;
+      border-radius: var(--radius-pill);
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+    .verdict-badge.exact_duplicate {
+      background: var(--v-exact-bg);
+      color: var(--v-exact);
+      border: 1px solid var(--v-exact);
+    }
+    .verdict-badge.semantic_duplicate {
+      background: var(--v-semantic-bg);
+      color: var(--v-semantic);
+      border: 1px solid var(--v-semantic);
+    }
+    .verdict-badge.review {
+      background: var(--v-review-bg);
+      color: var(--v-review);
+      border: 1px solid var(--v-review);
+    }
+    .verdict-badge.different {
+      background: var(--v-diff-bg);
+      color: var(--v-diff);
+      border: 1px solid var(--v-diff);
+    }
+
+    .badge-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .meta-tag {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 500;
+      padding: 3px 8px;
+      border-radius: var(--radius-sm);
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+    }
+    .meta-tag.guard {
+      background: rgba(245, 158, 11, 0.15);
+      color: #f59e0b;
+      border-color: rgba(245, 158, 11, 0.3);
+    }
+
+    .q-text {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 10px;
+    }
+
+    /* Token Diff Box */
+    .diff-box {
+      margin: 12px 0;
+      padding: 12px 14px;
+      background: rgba(0, 0, 0, 0.25);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+    .diff-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+    .token-match {
+      background: rgba(16, 185, 129, 0.15);
+      color: #34d399;
+      padding: 1px 4px;
+      border-radius: 3px;
+    }
+    .token-diverge {
+      background: rgba(239, 68, 68, 0.15);
+      color: #f87171;
+      padding: 1px 4px;
+      border-radius: 3px;
+    }
+
+    /* Judge Explanation */
+    .judge-box {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      padding: 10px 12px;
+      border-radius: var(--radius-sm);
+      background: rgba(99, 102, 241, 0.08);
+      border: 1px solid rgba(99, 102, 241, 0.2);
+      font-size: 13px;
+      color: var(--text);
+      margin-top: 10px;
+    }
+    .judge-icon {
+      font-size: 16px;
+    }
+
+    /* Neighbor details */
+    details {
+      margin-top: 12px;
+      font-size: 13px;
+    }
+    summary {
+      cursor: pointer;
+      color: var(--text-dim);
+      font-weight: 600;
+      user-select: none;
+      padding: 4px 0;
+    }
+    summary:hover {
+      color: var(--text);
+    }
+    .neighbor-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-top: 8px;
+      padding-left: 10px;
+      border-left: 2px solid var(--border);
+    }
+    .neighbor-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 6px 10px;
+      border-radius: var(--radius-sm);
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--border);
+      font-size: 12px;
+    }
+    .score-meter {
+      font-family: var(--font-mono);
+      font-weight: 600;
+      color: var(--primary);
+    }
+
+    /* Coverage Table */
+    table.data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      margin-top: 12px;
+    }
+    table.data-table th, table.data-table td {
+      padding: 10px 14px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    table.data-table th {
+      color: var(--text-muted);
+      font-weight: 600;
+      font-size: 12px;
+      text-transform: uppercase;
+    }
+    .progress-bar-bg {
+      width: 120px;
+      height: 8px;
+      border-radius: var(--radius-pill);
+      background: rgba(255, 255, 255, 0.08);
+      overflow: hidden;
+      display: inline-block;
+      vertical-align: middle;
+      margin-right: 8px;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      border-radius: var(--radius-pill);
+      background: var(--grad-brand);
+      transition: width 0.4s ease;
+    }
+
+    /* Question Bank Items */
+    .bank-search-bar {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+    .bank-grid {
+      display: grid;
+      gap: 12px;
+    }
+    .bank-item {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 14px 18px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      transition: all 0.2s;
+    }
+    .bank-item:hover {
+      border-color: var(--border-strong);
+      background: var(--bg-card-hover);
+    }
+    .bank-item-content {
+      flex: 1;
+    }
+    .bank-item-text {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 6px;
+    }
+    .tag-pill {
+      font-size: 11px;
+      font-weight: 500;
+      padding: 2px 8px;
+      border-radius: var(--radius-pill);
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      margin-right: 6px;
+      display: inline-block;
+      margin-top: 4px;
+    }
+
+    /* Toast Notification */
+    #toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: var(--bg-card-hover);
+      color: var(--text);
+      padding: 12px 20px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-strong);
+      box-shadow: var(--shadow-md);
+      font-size: 13px;
+      font-weight: 600;
+      opacity: 0;
+      transform: translateY(12px);
+      pointer-events: none;
+      transition: all 0.25s ease;
+      z-index: 999;
+    }
+    #toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* Spinner */
+    .spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      display: inline-block;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Responsive */
+    @media (max-width: 720px) {
+      .container { padding: 18px 14px 40px; }
+      header { flex-direction: column; align-items: flex-start; }
+      .header-actions { width: 100%; justify-content: space-between; }
+      .tabs-nav { flex-wrap: nowrap; overflow-x: auto; }
+      .tab-btn { min-width: 140px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <!-- Header -->
+  <header>
+    <div class="brand-wrap">
+      <div class="logo-badge" id="app-logo">DQ</div>
+      <div>
+        <h1 id="app-heading">DejaQ</h1>
+        <p class="tagline">Intelligent Question Generator with Redundancy Prevention & Duplicate Detection</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <div class="status-chip" id="health-chip" title="Server status">
+        <span class="dot" id="health-dot"></span>
+        <span id="health-text">Loading...</span>
+      </div>
+      <button class="theme-btn" id="theme-toggle-btn" onclick="toggleTheme()" title="Toggle Dark/Light theme">🌓 Theme</button>
+    </div>
+  </header>
+
+  <!-- Navigation Tabs -->
+  <nav class="tabs-nav" role="tablist">
+    <button class="tab-btn active" id="tab-btn-single" onclick="switchTab('single')">🔍 Single Check</button>
+    <button class="tab-btn" id="tab-btn-batch" onclick="switchTab('batch')">⚡ Batch Check</button>
+    <button class="tab-btn" id="tab-btn-generate" onclick="switchTab('generate')">✨ Coverage Generator</button>
+    <button class="tab-btn" id="tab-btn-bank" onclick="switchTab('bank')">📚 Question Bank (<span id="bank-count-tab">0</span>)</button>
+  </nav>
+
+  <!-- TAB 1: Single Check -->
+  <section class="tab-pane active" id="pane-single">
+    <div class="card">
+      <div class="card-title">
+        <span>Test Duplicate Safeguard</span>
+        <span class="meta-tag">3-Stage Detector</span>
+      </div>
+      <p class="card-desc">Evaluates via exact normalization, dense vector similarity (bge-small-en-v1.5), numeric guard, and Gemini LLM judge.</p>
+      
+      <div class="input-row">
+        <input type="text" id="single-query-input" class="flex-1" placeholder="Enter a question (e.g. Define the reflection of light.)" onkeydown="if(event.key==='Enter') runCheckSingle()">
+        <button class="btn btn-primary" id="btn-check-single" onclick="runCheckSingle()">Check Question</button>
+      </div>
+
+      <div class="samples-wrap">
+        <span>Quick Samples:</span>
+        <span class="chip" onclick="setSingleQuery('Define the reflection of light.')">Exact match</span>
+        <span class="chip" onclick="setSingleQuery('What do you understand by the reflection of light?')">Semantic paraphrase</span>
+        <span class="chip" onclick="setSingleQuery('The angle of incidence is 30°. What is the angle of reflection?')">Numeric guard (30°)</span>
+        <span class="chip" onclick="setSingleQuery('What is reflection?')">Ambiguous review</span>
+        <span class="chip" onclick="setSingleQuery('State Newton\'s third law of motion.')">Different topic</span>
+      </div>
+
+      <div id="single-result-container"></div>
+    </div>
+  </section>
+
+  <!-- TAB 2: Batch Check -->
+  <section class="tab-pane" id="pane-batch">
+    <div class="card">
+      <div class="card-title">
+        <span>Batch Classification</span>
+        <span class="meta-tag">Parallel Safeguard</span>
+      </div>
+      <p class="card-desc">Paste multiple questions (one per line) to evaluate the detector across a batch of candidates.</p>
+      
+      <textarea id="batch-input" placeholder="Paste questions here (one per line)..."></textarea>
+      
+      <div class="input-row" style="margin-top: 12px; justify-content: space-between;">
+        <div class="samples-wrap" style="margin-top: 0;">
+          <span>Presets:</span>
+          <button class="btn btn-ghost" id="btn-load-corpus" onclick="loadCorpusPreset()">Load Reflection Corpus</button>
+        </div>
+        <button class="btn btn-primary" id="btn-run-batch" onclick="runBatchCheck()">Run Batch Check</button>
+      </div>
+
+      <div id="batch-summary" style="margin-top: 14px;"></div>
+      <div id="batch-results-list" style="margin-top: 14px;"></div>
+    </div>
+  </section>
+
+  <!-- TAB 3: Generator -->
+  <section class="tab-pane" id="pane-generate">
+    <div class="card">
+      <div class="card-title">
+        <span>Redundancy-Aware Generation</span>
+        <span class="meta-tag">Coverage Planning</span>
+      </div>
+      <p class="card-desc">Plans subtopics, identifies existing coverage gaps, and guides LLM generation targeting under-represented concepts.</p>
+      
+      <div class="input-row">
+        <input type="text" id="gen-topic-input" class="flex-1" value="reflection of light" placeholder="Topic to expand (e.g. optics, photosynthesis)">
+        <input type="number" id="gen-count-input" value="5" min="1" max="15" style="width: 90px;" title="Target questions to produce">
+        <button class="btn btn-primary" id="btn-run-generate" onclick="runGenerate()">Generate Questions</button>
+      </div>
+
+      <div id="gen-output-container"></div>
+    </div>
+  </section>
+
+  <!-- TAB 4: Question Bank -->
+  <section class="tab-pane" id="pane-bank">
+    <div class="card">
+      <div class="card-title">
+        <span>Collection Explorer</span>
+        <span class="meta-tag" id="bank-count-chip">0 Stored Questions</span>
+      </div>
+      <p class="card-desc">Browse and filter stored questions. Content is used for duplicate scoring; tags are free-form filters.</p>
+      
+      <div class="bank-search-bar">
+        <input type="text" id="bank-search-text" class="flex-1" placeholder="Search by keyword..." oninput="renderFilteredBank()">
+        <input type="text" id="bank-filter-key" style="width: 160px;" placeholder="Tag Key (optional)" onchange="loadBank()">
+        <input type="text" id="bank-filter-val" style="width: 160px;" placeholder="Tag Value (optional)" onchange="loadBank()">
+        <button class="btn btn-ghost" id="btn-refresh-bank" onclick="loadBank()">Refresh</button>
+      </div>
+
+      <div id="bank-list-container" class="bank-grid"></div>
+    </div>
+  </section>
+</div>
+
+<!-- Toast notification element -->
+<div id="toast"></div>
 
 <script>
-const $=id=>document.getElementById(id);
-const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-async function api(url,body){
-  const r=await fetch(url,body?{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)}:{});
-  const j=await r.json().catch(()=>({}));
-  return {ok:r.ok,status:r.status,data:j};
-}
-const label=v=>esc(v.replace("_"," "));
-function row(q,r,extra=""){
-  const nb=(r.neighbors||[]).map(n=>`<div class="mut">${n.score.toFixed(3)} · ${esc(n.text)}</div>`).join("");
-  return `<div class="row"><span class="v">${label(r.verdict)}</span>
-  <span class="tag">${r.score.toFixed(3)}</span><span class="tag">${esc(r.stage)}</span>${r.numeric_guard?'<span class="tag">numeric guard</span>':""}
-  <br>${esc(q)}${r.match?`<div class="mut">matched: ${esc(r.match)}</div>`:""}
-  ${r.reason?`<div class="mut">judge: ${esc(r.reason)}</div>`:""}${nb?`<details><summary class="mut">neighbors</summary>${nb}</details>`:""}${extra}</div>`;
-}
-async function check(){
-  const q=$("q").value.trim(); if(q.length<3) return;
-  $("bcheck").disabled=true;
-  const {ok,data}=await api("/api/check",{question:q});
-  $("bcheck").disabled=false;
-  if(!ok){$("res").innerHTML=`<div class="row err">Request failed</div>`;return}
-  const canAdd=data.verdict==="different"||data.verdict==="review";
-  const btn=canAdd?`<br><button class="ghost" onclick="add(${data.verdict==="review"})">Add to collection${data.verdict==="review"?" (human override)":""}</button>`:"";
-  $("res").innerHTML=row(q,data,btn);
-}
-async function add(force){
-  const q=$("q").value.trim();
-  const {ok,data}=await api("/api/questions",{question:q,tags:{source:"manual"},force});
-  $("res").innerHTML=ok?`<div class="row">Added.</div>`:`<div class="row err">Not added: ${esc((data.detail||{}).verdict||"error")}</div>`;
-  load();
-}
-async function gen(){
-  $("bgen").disabled=true; $("gen").innerHTML='<p class="mut">Planning subtopics and generating…</p>';
-  const {ok,data}=await api("/api/generate",{topic:$("topic").value,n:+$("n").value});
-  $("bgen").disabled=false;
-  if(!ok){$("gen").innerHTML=`<div class="row err">Request failed (${data.detail?esc(JSON.stringify(data.detail)):"error"})</div>`;return}
-  const plan=(data.plan||[]).length?`<b>Coverage plan</b> <span class="mut">(lower = less covered, targeted first)</span>
-   <table><tr><th>Subtopic</th><th>Coverage</th></tr>${data.plan.map(p=>`<tr><td>${esc(p.subtopic)}</td><td>${p.coverage.toFixed(3)}</td></tr>`).join("")}</table>`:"";
-  $("gen").innerHTML=(data.error?`<div class="row err">${esc(data.error)}</div>`:"")+plan+
-   `<p><b>Accepted (${data.accepted.length})</b></p>`+data.accepted.map(a=>row(a.question,a)).join("")+
-   `<p><b>Rejected (${data.rejected.length})</b></p>`+data.rejected.map(a=>row(a.question,a)).join("");
-  load();
-}
-async function load(){
-  const p=new URLSearchParams(); if($("tk").value) p.set("tag_key",$("tk").value); if($("tv").value) p.set("tag_value",$("tv").value);
-  const {data}=await api("/api/questions?"+p);
-  $("cnt").textContent=data.length;
-  $("list").innerHTML=data.map(x=>`<div class="row">${esc(x.question)}<br>${Object.entries(x.tags).map(([k,v])=>`<span class="tag">${esc(k)}: ${esc(v)}</span>`).join("")}</div>`).join("");
-}
-load();
-</script></body></html>
+  // State
+  let currentQuestions = [];
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s || '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+  // Toast
+  function showToast(msg) {
+    const t = $('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3000);
+  }
+
+  // Theme Management
+  function toggleTheme() {
+    const html = document.documentElement;
+    const current = html.getAttribute('data-theme') || 'dark';
+    const next = current === 'dark' ? 'light' : 'dark';
+    html.setAttribute('data-theme', next);
+    localStorage.setItem('dejaq_theme', next);
+  }
+  const savedTheme = localStorage.getItem('dejaq_theme');
+  if (savedTheme) document.documentElement.setAttribute('data-theme', savedTheme);
+
+  // Tabs
+  function switchTab(tabId) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+    $('tab-btn-' + tabId).classList.add('active');
+    $('pane-' + tabId).classList.add('active');
+    if (tabId === 'bank') loadBank();
+  }
+
+  // API Client
+  async function api(url, body, method = 'POST') {
+    try {
+      const opts = body !== undefined 
+        ? { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }
+        : { method: 'GET' };
+      const r = await fetch(url, opts);
+      const data = await r.json().catch(() => ({}));
+      return { ok: r.ok, status: r.status, data };
+    } catch (e) {
+      return { ok: false, status: 500, data: { detail: e.message } };
+    }
+  }
+
+  // Health Check
+  async function checkHealth() {
+    const { ok, data } = await api('/api/health', undefined, 'GET');
+    if (ok) {
+      $('health-dot').className = data.llm ? 'dot' : 'dot offline';
+      $('health-text').textContent = `${data.questions} questions | LLM: ${data.llm ? 'Online' : 'Fallback'}`;
+      $('bank-count-tab').textContent = data.questions;
+      $('bank-count-chip').textContent = `${data.questions} Stored Questions`;
+    }
+  }
+
+  // Word-level token diff
+  function renderTokenDiff(candidate, matched) {
+    if (!matched) return '';
+    const candTokens = candidate.toLowerCase().split(/\s+/);
+    const matchTokens = new Set(matched.toLowerCase().split(/\s+/));
+    
+    const highlighted = candTokens.map(tok => {
+      const clean = tok.replace(/[^\w]/g, '');
+      const isShared = matchTokens.has(clean) || matchTokens.has(tok);
+      return `<span class="${isShared ? 'token-match' : 'token-diverge'}">${esc(tok)}</span>`;
+    }).join(' ');
+
+    return `
+      <div class="diff-box">
+        <div class="diff-label">Divergence Comparison (vs. Matched Neighbor)</div>
+        <div><strong>Candidate:</strong> ${highlighted}</div>
+        <div style="margin-top: 4px; color: var(--text-dim);"><strong>Matched:</strong> ${esc(matched)}</div>
+      </div>
+    `;
+  }
+
+  // Render Result Component
+  function renderResultCard(q, r, showAddBtn = true) {
+    const v = r.verdict || 'unknown';
+    const scoreFormatted = (r.score !== undefined ? Number(r.score).toFixed(3) : '0.000');
+    const isReview = v === 'review';
+    const isDiff = v === 'different';
+
+    const neighborsHtml = (r.neighbors || []).map(n => `
+      <div class="neighbor-item">
+        <span>${esc(n.text)}</span>
+        <span class="score-meter">${Number(n.score).toFixed(3)}</span>
+      </div>
+    `).join('');
+
+    let actionBtn = '';
+    if (showAddBtn && (isDiff || isReview)) {
+      actionBtn = `
+        <div style="margin-top: 14px;">
+          <button class="btn ${isReview ? 'btn-ghost' : 'btn-primary'}" onclick="addToCollection('${esc(q).replace(/'/g, "\\'")}', ${isReview})">
+            ${isReview ? 'Force Add (Human Override)' : '+ Add to Collection'}
+          </button>
+        </div>
+      `;
+    }
+
+    return `
+      <div class="result-card">
+        <div class="result-header">
+          <span class="verdict-badge ${v}">${esc(v.replace('_', ' '))}</span>
+          <div class="badge-group">
+            <span class="meta-tag">Similarity: ${scoreFormatted}</span>
+            <span class="meta-tag">Stage: ${esc(r.stage || 'n/a')}</span>
+            ${r.numeric_guard ? '<span class="meta-tag guard">⚠️ Numeric Guard Triggered</span>' : ''}
+          </div>
+        </div>
+        <div class="q-text">${esc(q)}</div>
+        ${r.match ? renderTokenDiff(q, r.match) : ''}
+        ${r.reason ? `
+          <div class="judge-box">
+            <span class="judge-icon">⚖️</span>
+            <div><strong>Judge Decision:</strong> ${esc(r.reason)}</div>
+          </div>
+        ` : ''}
+        ${neighborsHtml ? `
+          <details>
+            <summary>Nearest Store Neighbors (${(r.neighbors || []).length})</summary>
+            <div class="neighbor-list">${neighborsHtml}</div>
+          </details>
+        ` : ''}
+        ${actionBtn}
+      </div>
+    `;
+  }
+
+  // Single Check
+  function setSingleQuery(text) {
+    $('single-query-input').value = text;
+    runCheckSingle();
+  }
+
+  async function runCheckSingle() {
+    const q = $('single-query-input').value.trim();
+    if (q.length < 3) {
+      showToast('Please enter at least 3 characters.');
+      return;
+    }
+    const btn = $('btn-check-single');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Checking...';
+    
+    const { ok, data } = await api('/api/check', { question: q });
+    btn.disabled = false;
+    btn.innerHTML = 'Check Question';
+
+    if (!ok) {
+      $('single-result-container').innerHTML = `<div class="result-card" style="border-color: #ef4444;"><span class="meta-tag guard">Error</span> ${esc(data.detail || 'Request failed')}</div>`;
+      return;
+    }
+    $('single-result-container').innerHTML = renderResultCard(q, data, true);
+  }
+
+  async function addToCollection(question, force = false) {
+    const { ok, data } = await api('/api/questions', { question, tags: { source: 'manual' }, force });
+    if (ok) {
+      showToast('Successfully added to collection!');
+      checkHealth();
+      runCheckSingle(); // re-evaluate to show it is now an exact duplicate
+    } else {
+      showToast(`Failed: ${(data.detail || {}).verdict || 'Conflict / Rejected'}`);
+    }
+  }
+
+  // Batch Check
+  function loadCorpusPreset() {
+    $('batch-input').value = [
+      'Define the reflection of light.',
+      'What do you understand by the reflection of light?',
+      'Explain the meaning of light reflection.',
+      'State the laws of reflection of light.',
+      'What is the angle of reflection?',
+      'The angle of incidence is 30°. What is the angle of reflection?',
+      'What is reflection?',
+      'What is the difference between regular and diffuse reflection?'
+    ].join('\n');
+  }
+
+  async function runBatchCheck() {
+    const lines = $('batch-input').value.split('\n').map(l => l.trim()).filter(l => l.length >= 3);
+    if (!lines.length) {
+      showToast('Enter at least one question.');
+      return;
+    }
+    const btn = $('btn-run-batch');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Evaluating...';
+
+    const { ok, data } = await api('/api/check/batch', { questions: lines });
+    btn.disabled = false;
+    btn.innerHTML = 'Run Batch Check';
+
+    if (!ok) {
+      showToast('Batch check failed.');
+      return;
+    }
+
+    const results = data.results || [];
+    const counts = { exact_duplicate: 0, semantic_duplicate: 0, review: 0, different: 0 };
+    results.forEach(r => { if (counts[r.verdict] !== undefined) counts[r.verdict]++; });
+
+    $('batch-summary').innerHTML = `
+      <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:12px;">
+        <span class="meta-tag" style="background:var(--v-exact-bg); color:var(--v-exact); border-color:var(--v-exact);">Exact Duplicates: ${counts.exact_duplicate}</span>
+        <span class="meta-tag" style="background:var(--v-semantic-bg); color:var(--v-semantic); border-color:var(--v-semantic);">Semantic Duplicates: ${counts.semantic_duplicate}</span>
+        <span class="meta-tag" style="background:var(--v-review-bg); color:var(--v-review); border-color:var(--v-review);">Needs Review: ${counts.review}</span>
+        <span class="meta-tag" style="background:var(--v-diff-bg); color:var(--v-diff); border-color:var(--v-diff);">Different / New: ${counts.different}</span>
+      </div>
+    `;
+
+    $('batch-results-list').innerHTML = results.map(r => renderResultCard(r.question, r, false)).join('');
+  }
+
+  // Generation
+  async function runGenerate() {
+    const topic = $('gen-topic-input').value.trim();
+    const n = parseInt($('gen-count-input').value, 10);
+    if (!topic) {
+      showToast('Please provide a topic.');
+      return;
+    }
+    const btn = $('btn-run-generate');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Planning Coverage & Generating...';
+    $('gen-output-container').innerHTML = '<div style="margin-top: 20px; color: var(--text-dim); text-align: center;"><span class="spinner"></span> Planning subtopics and vetting candidates...</div>';
+
+    const { ok, data } = await api('/api/generate', { topic, n });
+    btn.disabled = false;
+    btn.innerHTML = 'Generate Questions';
+
+    if (!ok) {
+      $('gen-output-container').innerHTML = `<div class="result-card" style="border-color:#ef4444;">Failed to generate: ${esc((data.detail || {}).message || 'API error')}</div>`;
+      return;
+    }
+
+    const planRows = (data.plan || []).map(p => `
+      <tr>
+        <td><strong>${esc(p.subtopic)}</strong></td>
+        <td>
+          <div class="progress-bar-bg">
+            <div class="progress-bar-fill" style="width: ${Math.min(100, Math.round(p.coverage * 100))}%;"></div>
+          </div>
+          <span class="score-meter">${Number(p.coverage).toFixed(3)}</span>
+        </td>
+      </tr>
+    `).join('');
+
+    const planHtml = planRows ? `
+      <div style="margin-top: 20px;">
+        <h4 style="font-size: 14px; font-weight: 700; margin-bottom: 6px;">Coverage Plan (Lowest Coverage Targeted First)</h4>
+        <table class="data-table">
+          <thead><tr><th>Subtopic</th><th>Current Coverage</th></tr></thead>
+          <tbody>${planRows}</tbody>
+        </table>
+      </div>
+    ` : '';
+
+    const acceptedHtml = (data.accepted || []).map(a => renderResultCard(a.question, a, false)).join('');
+    const rejectedHtml = (data.rejected || []).map(r => renderResultCard(r.question, r, false)).join('');
+
+    $('gen-output-container').innerHTML = `
+      ${data.error ? `<div class="result-card" style="border-color:#f59e0b;"><span class="meta-tag guard">Note</span> ${esc(data.error)}</div>` : ''}
+      ${planHtml}
+      <div style="margin-top: 24px;">
+        <h4 style="font-size: 15px; font-weight: 700; color: #10b981; margin-bottom: 10px;">✅ Accepted Questions (${(data.accepted || []).length})</h4>
+        ${acceptedHtml || '<p style="font-size: 13px; color: var(--text-dim);">No questions accepted in this run.</p>'}
+      </div>
+      <div style="margin-top: 24px;">
+        <h4 style="font-size: 15px; font-weight: 700; color: #ef4444; margin-bottom: 10px;">🚫 Rejected Duplicates (${(data.rejected || []).length})</h4>
+        ${rejectedHtml || '<p style="font-size: 13px; color: var(--text-dim);">No questions rejected.</p>'}
+      </div>
+    `;
+    checkHealth();
+  }
+
+  // Question Bank
+  async function loadBank() {
+    const tk = $('bank-filter-key').value.trim();
+    const tv = $('bank-filter-val').value.trim();
+    const params = new URLSearchParams();
+    if (tk) params.set('tag_key', tk);
+    if (tv) params.set('tag_value', tv);
+
+    const { ok, data } = await api('/api/questions?' + params.toString(), undefined, 'GET');
+    if (ok) {
+      currentQuestions = data || [];
+      renderFilteredBank();
+      $('bank-count-tab').textContent = currentQuestions.length;
+      $('bank-count-chip').textContent = `${currentQuestions.length} Stored Questions`;
+    }
+  }
+
+  function renderFilteredBank() {
+    const q = ($('bank-search-text').value || '').toLowerCase().trim();
+    const filtered = currentQuestions.filter(item => !q || item.question.toLowerCase().includes(q));
+    
+    if (!filtered.length) {
+      $('bank-list-container').innerHTML = `
+        <div style="padding: 24px; text-align: center; color: var(--text-dim); font-size: 14px;">
+          No matching questions found in collection.
+        </div>
+      `;
+      return;
+    }
+
+    $('bank-list-container').innerHTML = filtered.map(item => {
+      const tagPills = Object.entries(item.tags || {}).map(([k, v]) => `
+        <span class="tag-pill">${esc(k)}: <strong>${esc(v)}</strong></span>
+      `).join('');
+      return `
+        <div class="bank-item" id="q-card-${item.id}">
+          <div class="bank-item-content">
+            <div class="bank-item-text">${esc(item.question)}</div>
+            <div>${tagPills || '<span style="font-size:12px;color:var(--text-muted);">No tags</span>'}</div>
+          </div>
+          <button class="btn btn-danger" style="padding: 6px 12px; font-size: 12px;" onclick="deleteQuestion('${item.id}')" title="Delete question">
+            Delete
+          </button>
+        </div>
+      `;
+    }).join('');
+  }
+
+  async function deleteQuestion(qid) {
+    if (!confirm('Remove this question from the DejaQ collection?')) return;
+    const { ok } = await api(`/api/questions/${qid}`, undefined, 'DELETE');
+    if (ok) {
+      showToast('Question deleted');
+      currentQuestions = currentQuestions.filter(x => x.id !== qid);
+      renderFilteredBank();
+      checkHealth();
+    } else {
+      showToast('Could not delete question');
+    }
+  }
+
+  // Initialize
+  checkHealth();
+  loadBank();
+</script>
+
+</body>
+</html>
