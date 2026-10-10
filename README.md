@@ -1,140 +1,169 @@
----
-title: DejaQ
-emoji: 🔍
-colorFrom: indigo
-colorTo: blue
-sdk: docker
-app_port: 7860
-pinned: false
----
-
 # DejaQ
 
-Intelligent question generation with coverage-aware redundancy prevention and an independent 3-stage duplicate detector.
+Question generation with semantic deduplication.
 
-**Live demo:** `<space-url>`  
-**Demo video:** `<video-link>`
+DejaQ generates questions for a given topic while checking that new candidates do not repeat questions already in the collection. It combines coverage-aware generation with an independent duplicate-checking pipeline, so generation-time instructions are not the only line of defense.
 
-## Overview
+## Features
 
-A question bank grows over time, and an LLM asked to "generate more questions" keeps repeating itself, often with different wording. This project handles that with two independent layers:
+- **Coverage-aware generation:** identifies under-represented subtopics and directs generation toward them.
+- **Bounded retrieval context:** selects relevant and diverse examples without sending the entire question bank to the LLM.
+- **Independent duplicate detection:** checks candidates using normalized text, semantic similarity, numeric safeguards, and an LLM judge for ambiguous cases.
+- **Hard-negative handling:** avoids automatically merging questions that look similar but ask for different things, such as a definition versus a numerical problem.
+- **Flexible tags:** supports arbitrary key-value tags for filtering; tags do not influence duplicate decisions.
+- **Batch checking and in-batch deduplication:** checks multiple candidates and verifies accepted questions against previously accepted candidates.
+- **Evaluation and tests:** includes a reflection-of-light benchmark, detector tests, API tests, and evaluation scripts.
+- **API and web interface:** exposes a FastAPI API and a browser-based interface.
 
-1. **Prevention (generation time).** A coverage-aware generator plans subtopics, finds the ones the collection covers least, and gives the LLM a bounded, retrieval-selected view of existing questions.
-2. **Detection (safeguard).** Every candidate goes through a separate three-stage detector. It does not trust the generator.
+## How It Works
 
-Duplicate logic uses question content only. Tags are free-form key-value pairs used for filtering, never for dedup.
+### Generation pipeline
 
-## Detector
+1. The generator identifies topic subareas and estimates which areas are under-represented in the question bank.
+2. It retrieves a bounded set of relevant and diverse existing questions.
+3. The LLM generates candidates using the selected context and prior rejection feedback.
+4. Each candidate passes through the independent duplicate detector before it can be accepted.
 
-| Stage | Method | Decides |
-|-------|--------|---------|
-| 1 | Normalized string match | Exact duplicates (case, punctuation, spacing, unicode) |
-| 2 | Embedding cosine similarity vs. top-3 neighbors (`bge-small-en-v1.5`) | Clearly different (< 0.75). Near-identical (>= 0.96) only if no numeric mismatch |
-| 3 | LLM judge sees all neighbors above 0.75 in one call | Paraphrase vs. same-topic-different-question vs. ambiguous |
+### Duplicate detection pipeline
 
-Safety rules:
-- **Numeric guard:** if the given numbers differ (e.g. "30°" vs. none), the pair is never auto-merged. It always goes to the judge.
-- **Graceful degradation:** without an LLM key, borderline cases return `review` (or `semantic_duplicate` if >= 0.90 and no numeric mismatch).
+1. **Exact match:** normalize Unicode, case, punctuation, and whitespace, then check for an exact normalized match.
+2. **Semantic similarity:** encode questions with `BAAI/bge-small-en-v1.5` and compare normalized embeddings using cosine similarity.
+3. **Numeric safeguard:** route questions with differing numerical details for additional review rather than automatically merging them based on embedding similarity alone.
+4. **LLM judgment:** compare close neighbors and classify the candidate as a duplicate, different, or requiring review. If the LLM is unavailable, the system uses conservative fallback behavior.
 
-Verdicts: `exact_duplicate`, `semantic_duplicate`, `different`, `review`.
+The stages are intentionally separate from generation: a candidate can still be rejected even if the LLM was instructed to avoid existing questions.
 
-## Generator
+## Tech Stack
 
-1. LLM lists subtopics for the topic. Each is scored by how well the collection already covers it (max similarity to any stored question).
-2. The least-covered subtopics become generation targets.
-3. Prompt context is a fixed-size set: top-15 relevant + top-3 per target subtopic + 10 farthest-point diverse questions.
-4. Each candidate is vetted by the detector. Accepted ones are stored immediately (so in-batch repeats are caught). Rejected ones are fed back as "avoid" for the next round (up to 3).
+- Python 3.11+
+- FastAPI and Uvicorn
+- fastembed with `BAAI/bge-small-en-v1.5` embeddings
+- Gemini API for question generation and ambiguous-case judgments
+- NumPy for similarity calculations
+- JSON-based local persistence
+- Pytest for automated tests
+- Docker for containerized deployment
 
-## Tech stack
+## Quickstart
 
-FastAPI · fastembed (ONNX, no PyTorch) · NumPy cosine index · Gemini (generation + judge) · vanilla HTML/JS UI · Docker on Hugging Face Spaces · pytest + GitHub Actions
+### Requirements
 
-## Project structure
+- Python 3.11 or newer
+- A Gemini API key for LLM-based generation and judgment (optional for basic duplicate checking)
 
-```
-app/
-  main.py         routes, seeding, static UI (create_app factory)
-  config.py       thresholds and env vars
-  normalize.py    text normalization + numeric extraction
-  embeddings.py   lazy-loaded embedding model
-  store.py        questions, vectors, tags, coverage, persistence
-  llm.py          Gemini client with retry/backoff
-  detector.py     independent 3-stage detector
-  generator.py    coverage-aware generation loop
-static/index.html
-data/seed_questions.json
-eval/             reflection_corpus.json, generate_pairs.py, run_eval.py
-tests/            unit + API tests (no model download needed)
-docs/             ARCHITECTURE, BACKEND, FRONTEND, EVALUATION, METHODOLOGY, DEPLOYMENT
-.github/workflows/ci.yml
-Dockerfile, requirements*.txt, .env.example
-```
-
-## Run locally
+### Install
 
 ```bash
+git clone https://github.com/palakbhatt1/DejaQ.git
+cd DejaQ
 pip install -r requirements.txt
-export GEMINI_API_KEY=your_key
+```
+
+### Configure the LLM (optional)
+
+Set `GEMINI_API_KEY` in your environment.
+
+**PowerShell**
+```powershell
+$env:GEMINI_API_KEY = "your-api-key"
+```
+
+**macOS/Linux**
+```bash
+export GEMINI_API_KEY="your-api-key"
+```
+
+### Run
+
+```bash
 uvicorn app.main:app --reload --port 7860
 ```
 
-Open `http://localhost:7860`. Without a key the detector still works; generation needs the key.
-
-## Tests
-
-```bash
-pip install -r requirements-dev.txt
-pytest                       # fast tests, fake embedder, no downloads
-RUN_SLOW=1 pytest -m slow    # real model on the reflection corpus
-```
-
-## Evaluation
-
-```bash
-python -m eval.generate_pairs   # builds eval/pairs.json (~150 labeled pairs, needs GEMINI_API_KEY)
-python -m eval.run_eval         # confusion matrix, precision/recall, threshold sweep, latency
-```
-
-See `docs/EVALUATION.md`. Labels in `pairs.json` are LLM-produced and should be spot-checked by hand.
+Open `http://localhost:7860` for the web interface or `http://localhost:7860/docs` for interactive API documentation.
 
 ## API
 
-| Method | Route | Purpose |
-|--------|-------|---------|
-| POST | `/api/check` | Classify a single question (read-only) |
-| POST | `/api/check/batch` | Classify a list of questions in parallel |
-| POST | `/api/generate` | Plan, generate and vet new questions for a topic |
-| POST | `/api/questions` | Add a question. Duplicates return `409`; `review` needs `"force": true` |
-| DELETE | `/api/questions/{id}` | Remove a question from the collection |
-| GET | `/api/questions` | List questions; optional `tag_key` and `tag_value` filters |
-| GET | `/api/health` | Status, question count, and LLM readiness |
+| Method | Endpoint | Purpose |
+|---|---|---|
+| POST | `/api/check` | Check one question against the collection without storing it. |
+| POST | `/api/check/batch` | Check a batch of questions. |
+| POST | `/api/generate` | Generate candidates for a topic and return vetted questions. |
+| POST | `/api/questions` | Validate and store a question. |
+| GET | `/api/questions` | List questions, with optional tag filtering. |
+| DELETE | `/api/questions/{id}` | Delete a question by ID. |
+| GET | `/api/health` | Return service and readiness information. |
+
+Example request:
 
 ```bash
-curl -X POST localhost:7860/api/check -H "Content-Type: application/json" \
-  -d '{"question": "Define the reflection of light."}'
+curl -X POST http://localhost:7860/api/check \
+  -H "Content-Type: application/json" \
+  -d '{"question":"What do you understand by the reflection of light?"}'
 ```
 
 ## Configuration
 
-| Variable | Default | Meaning |
-|----------|---------|---------|
-| `GEMINI_API_KEY` | none | Generation and the judge |
-| `GEMINI_MODEL` | `gemini-2.5-flash` | |
-| `AUTO_DUP_THRESHOLD` | `0.96` | At or above (and no numeric mismatch): duplicate without the LLM |
-| `FALLBACK_DUP_THRESHOLD` | `0.92` | Duplicate threshold used only when the LLM is unavailable |
-| `REVIEW_THRESHOLD` | `0.75` | Below: different. Between this and the auto threshold: judge |
-| `JUDGE_TOP_K` | `3` | Neighbors shown to the judge |
-| `LLM_RETRIES` | `3` | Attempts with exponential backoff |
-| `DATA_PATH` | `data/store.json` | Persistence file |
+| Variable | Purpose |
+|---|---|
+| `GEMINI_API_KEY` | Enables Gemini-based generation and judgment. |
+| `GEMINI_MODEL` | Gemini model name; defaults to `gemini-2.5-flash`. |
+| `AUTO_DUP_THRESHOLD` | Similarity threshold for automatic semantic-duplicate classification. |
+| `FALLBACK_DUP_THRESHOLD` | Threshold used by the fallback detector when the LLM judge is unavailable. |
+| `REVIEW_THRESHOLD` | Lower similarity boundary for routing a candidate to further judgment. |
+| `JUDGE_TOP_K` | Maximum number of close neighbors passed to the judge. |
+| `LLM_RETRIES` | Retry count for transient LLM/API failures. |
+| `DATA_PATH` | Path to the JSON question store. |
 
-Thresholds are starting points. Tune them with `eval/run_eval.py`.
+See `app/config.py` for the effective defaults and implementation details.
 
-## Known limitations
+## Tests and Evaluation
 
-- Single-process store (thread-safe, but run one worker). Use Postgres + pgvector for multi-worker deployments.
-- Free Hugging Face Spaces storage is ephemeral: the collection resets to the seed on restart.
-- Judge labels and evaluation pairs are LLM-produced; results are only as good as the spot-check.
+Run the standard test suite:
 
-## Docs
+```bash
+pip install -r requirements-dev.txt
+pytest
+```
 
-[Architecture](docs/ARCHITECTURE.md) · [Backend](docs/BACKEND.md) · [Frontend](docs/FRONTEND.md) · [Evaluation](docs/EVALUATION.md) · [Methodology](docs/METHODOLOGY.md) · [Deployment](docs/DEPLOYMENT.md)
+Run the real-model test (downloads/uses the embedding model):
+
+```bash
+RUN_SLOW=1 pytest -m slow
+```
+
+Evaluate the reflection corpus:
+
+```bash
+python -m eval.run_eval --skip-latency
+```
+
+Generate additional labeled test pairs (requires `GEMINI_API_KEY`):
+
+```bash
+python -m eval.generate_pairs
+```
+
+The included reflection corpus covers exact duplicates, paraphrases, questions on the same topic that test different concepts, numerical questions, and ambiguous cases. Similarity thresholds are heuristics and should be evaluated on a representative labeled dataset before production use.
+
+## Project Structure
+
+```
+DejaQ/
+├── app/
+│   ├── config.py       # Configuration and thresholds
+│   ├── detector.py     # Independent duplicate detection
+│   ├── embeddings.py   # Embedding model wrapper
+│   ├── generator.py    # Coverage-aware generation workflow
+│   ├── llm.py          # Gemini client and retries
+│   ├── main.py         # FastAPI application and routes
+│   ├── normalize.py    # Text normalization and numeric extraction
+│   └── store.py        # Question storage and similarity operations
+├── data/               # Seed questions
+├── docs/               # Architecture, API, evaluation, and deployment notes
+├── eval/               # Benchmark corpus and evaluation scripts
+├── static/             # Web interface
+├── tests/              # Unit and API tests
+├── Dockerfile
+├── requirements.txt
+└── requirements-dev.txt
+```
