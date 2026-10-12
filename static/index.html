@@ -239,8 +239,6 @@
       width: 100%;
       max-width: 710px;
       position: relative;
-      perspective: 1200px;
-      perspective-origin: 40% 50%;
     }
 
     /* Fixed Static 3D Glass Slab: strictly locked in 3D, never moves on click/hover */
@@ -248,32 +246,37 @@
       display: grid;
       grid-template-columns: 1fr 215px;
       background: var(--card-bg);
-      border: 1px solid rgba(255, 255, 255, 0.18);
+      border: 1px solid rgba(255, 255, 255, 0.2);
       border-radius: 20px;
       backdrop-filter: blur(24px);
       -webkit-backdrop-filter: blur(24px);
       box-shadow: 
-        -22px 32px 55px rgba(0, 0, 0, 0.75),
-        inset 0 1px 2px rgba(255, 255, 255, 0.4),
+        -28px 38px 65px rgba(0, 0, 0, 0.8),
+        -10px 15px 30px rgba(0, 0, 0, 0.5),
+        inset 0 1px 2px rgba(255, 255, 255, 0.45),
         inset 0 0 20px rgba(78, 140, 255, 0.08);
-      transform: rotateX(6deg) rotateY(-13deg) rotateZ(2.5deg);
+      transform: perspective(1000px) rotateX(7deg) rotateY(-15deg) rotateZ(3deg);
       transform-style: preserve-3d;
       transform-origin: center center;
       position: relative;
-      overflow: hidden;
     }
 
     .showcase-3d-slab::before {
       content: '';
       position: absolute;
       top: 0; left: 0; right: 0; height: 1px;
-      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.35), transparent);
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.45), transparent);
+      border-top-left-radius: 20px;
+      border-top-right-radius: 20px;
+      pointer-events: none;
     }
 
     /* Left Panel: Detection */
     .panel-detector {
       padding: 14px 18px 16px;
       border-right: 1px solid rgba(255, 255, 255, 0.08);
+      border-top-left-radius: 20px;
+      border-bottom-left-radius: 20px;
       display: flex;
       flex-direction: column;
       gap: 10px;
@@ -282,11 +285,11 @@
 
     /* Specular Light Reflection Bar at Top Center */
     .specular-highlight {
-      width: 120px;
+      width: 140px;
       height: 3px;
-      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.75), transparent);
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.8), transparent);
       border-radius: 999px;
-      margin: 0 auto 4px;
+      margin: 0 auto 6px;
       box-shadow: 0 0 10px rgba(255, 255, 255, 0.6);
     }
 
@@ -294,6 +297,8 @@
     .panel-coverage {
       padding: 18px 16px;
       background: rgba(7, 16, 34, 0.5);
+      border-top-right-radius: 20px;
+      border-bottom-right-radius: 20px;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
@@ -588,10 +593,10 @@
     }
 
     @media (max-width: 980px) {
-      .hero-main { grid-template-columns: 1fr; }
-      .showcase-3d-slab { grid-template-columns: 1fr; transform: none; }
-      .panel-coverage { display: none; }
       .nav-links { display: none; }
+      .showcase-3d-slab {
+        transform: perspective(1000px) rotateX(6deg) rotateY(-12deg) rotateZ(2deg);
+      }
     }
   </style>
 </head>
