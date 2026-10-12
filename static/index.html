@@ -4,34 +4,36 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>DejaQ — Generate Better Questions. Not Duplicates.</title>
-  <meta name="description" content="AI-powered question generation with coverage-aware planning and semantic deduplication.">
+  <meta name="description" content="AI-powered question generation with semantic deduplication.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg-dark: #050b16;
-      --card-bg: rgba(9, 18, 35, 0.72);
+      --bg-dark: #050a14;
+      --card-bg: rgba(9, 20, 42, 0.68);
+      --inner-card-bg: rgba(14, 28, 56, 0.65);
       --border-glass: rgba(255, 255, 255, 0.12);
       --border-glass-bright: rgba(255, 255, 255, 0.22);
-      --text-main: #f5efe6;
-      --text-muted: #94a5bd;
-      --text-dim: #62748e;
-      --cream: #f2eee3;
+      --text-main: #ffffff;
+      --text-muted: #8fa0b8;
+      --text-dim: #60728c;
+      --cream: #f0ece1;
       --cream-hover: #ffffff;
-      --accent-green: #10b981;
+      --banner-bg: #d7d0c5;
+      --banner-text: #161c28;
+      --accent-green: #22c55e;
       --accent-amber: #f59e0b;
       --accent-blue: #3b82f6;
-      --accent-red: #ef4444;
       --font-body: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
       --font-mono: 'Space Grotesk', monospace;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
-    /* Strictly non-scrollable landing page */
+    /* Strictly non-scrollable hero viewport */
     html, body {
-      width: 100%;
+      width: 100vw;
       height: 100vh;
       max-height: 100vh;
       overflow: hidden;
@@ -41,17 +43,17 @@
       position: relative;
     }
 
-    /* Photographic Background Layer */
+    /* Photographic Background Layer matching reference */
     .bg-sky {
       position: absolute;
       top: 0; left: 0; width: 100%; height: 100%;
-      background: url('/assets/hero_bg_full.jpg') center center / cover no-repeat;
-      opacity: 0.85;
+      background: url('/assets/hero_bg_full.jpg') center bottom / cover no-repeat;
+      opacity: 0.92;
       z-index: 0;
       pointer-events: none;
     }
 
-    /* Halftone Stipple Texture Overlay */
+    /* Stipple Halftone Dot Matrix Overlay */
     .bg-halftone-overlay {
       position: absolute;
       top: 0; left: 0; width: 100%; height: 100%;
@@ -63,7 +65,7 @@
     }
 
     /* Overall Layout Shell */
-    .page-layout {
+    .page-shell {
       position: relative;
       z-index: 2;
       width: 100%;
@@ -71,7 +73,7 @@
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      padding: 24px 44px 28px;
+      padding: clamp(16px, 3vh, 32px) clamp(24px, 4.5vw, 64px) clamp(16px, 2.8vh, 30px);
     }
 
     /* Top Navigation Bar */
@@ -81,6 +83,7 @@
       justify-content: space-between;
       width: 100%;
       height: 52px;
+      flex-shrink: 0;
     }
 
     .brand {
@@ -91,241 +94,206 @@
       color: var(--cream);
       font-size: 22px;
       font-weight: 800;
-      letter-spacing: -0.5px;
+      letter-spacing: -0.6px;
     }
 
     .brand-star {
-      width: 22px;
-      height: 22px;
+      width: 24px;
+      height: 24px;
       display: inline-block;
       fill: #ffffff;
-      filter: drop-shadow(0 0 6px rgba(255,255,255,0.7));
+      filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.8));
     }
 
-    .nav-menu {
+    .nav-links {
       display: flex;
       align-items: center;
-      gap: 32px;
+      gap: clamp(18px, 2.5vw, 36px);
       list-style: none;
     }
 
-    .nav-menu a {
-      color: rgba(245, 239, 230, 0.85);
+    .nav-links a {
+      color: rgba(255, 255, 255, 0.82);
       text-decoration: none;
-      font-size: 13.5px;
+      font-size: 14px;
       font-weight: 500;
       transition: color 0.2s;
     }
 
-    .nav-menu a:hover {
+    .nav-links a:hover {
       color: #ffffff;
     }
 
-    .btn-pill-cream {
+    .btn-get-started {
       display: inline-flex;
       align-items: center;
       gap: 8px;
       background: var(--cream);
-      color: #0c1322;
-      padding: 9px 22px;
+      color: #0c1424;
+      padding: 9px 24px;
       border-radius: 9999px;
       font-size: 13.5px;
       font-weight: 600;
       text-decoration: none;
-      border: 1px solid var(--cream);
       transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-      box-shadow: 0 4px 14px rgba(0,0,0,0.3);
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
       cursor: pointer;
+      border: 1px solid var(--cream);
+      white-space: nowrap;
     }
 
-    .btn-pill-cream:hover {
+    .btn-get-started:hover {
       background: #ffffff;
       transform: translateY(-2px);
-      box-shadow: 0 8px 22px rgba(242, 238, 227, 0.3);
+      box-shadow: 0 8px 22px rgba(240, 236, 225, 0.3);
     }
 
     /* Hero Center Stage */
-    .hero-center {
+    .hero-main {
       display: grid;
-      grid-template-columns: 1fr 1.16fr;
-      gap: 40px;
+      grid-template-columns: 0.95fr 1.25fr;
+      gap: clamp(24px, 4vw, 56px);
       align-items: center;
       flex: 1;
       min-height: 0;
-      margin: 12px 0;
+      margin: 8px 0;
     }
 
-    /* Left Column */
+    /* Left Copy Column */
     .hero-copy {
       display: flex;
       flex-direction: column;
       justify-content: center;
-      max-width: 530px;
+      max-width: 520px;
     }
 
-    .headline {
-      font-size: 58px;
+    .hero-title {
+      font-size: clamp(42px, 4.6vw, 64px);
       font-weight: 800;
       line-height: 1.05;
-      letter-spacing: -1.8px;
-      color: var(--cream);
-      margin-bottom: 20px;
+      letter-spacing: -2px;
+      color: #ffffff;
+      margin-bottom: 22px;
     }
 
-    .subheading {
+    .hero-subtitle {
       font-family: var(--font-mono);
-      font-size: 12px;
-      letter-spacing: 1.6px;
+      font-size: 11.5px;
+      letter-spacing: 1.8px;
       text-transform: uppercase;
-      color: var(--text-muted);
+      color: rgba(255, 255, 255, 0.65);
       line-height: 1.6;
       margin-bottom: 30px;
     }
 
-    .hero-actions {
+    .hero-buttons {
       display: flex;
       align-items: center;
       gap: 14px;
-      margin-bottom: 36px;
     }
 
-    .btn-pill-glass {
+    .btn-watch-demo {
       display: inline-flex;
       align-items: center;
-      gap: 8px;
-      background: rgba(14, 25, 45, 0.45);
-      color: var(--cream);
-      border: 1px solid var(--border-glass-bright);
+      gap: 10px;
+      background: transparent;
+      color: #ffffff;
+      border: 1px solid rgba(255, 255, 255, 0.35);
       padding: 9px 22px;
       border-radius: 9999px;
       font-size: 13.5px;
-      font-weight: 600;
+      font-weight: 500;
       text-decoration: none;
-      backdrop-filter: blur(12px);
+      backdrop-filter: blur(8px);
       transition: all 0.2s;
       cursor: pointer;
     }
 
-    .btn-pill-glass:hover {
-      background: rgba(255, 255, 255, 0.12);
-      border-color: rgba(255, 255, 255, 0.4);
+    .btn-watch-demo:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.6);
       transform: translateY(-2px);
     }
 
-    /* Callout Banner Box */
-    .callout-box {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      background: rgba(220, 215, 205, 0.88);
-      border-radius: 12px;
-      padding: 12px 16px;
-      position: relative;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-    }
-
-    .callout-star-badge {
-      position: absolute;
-      top: -18px;
-      left: 16px;
-      width: 32px;
-      height: 32px;
-      background: #000000;
-      border-radius: 6px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.4);
-    }
-
-    .callout-star-badge svg {
+    .play-circle {
       width: 18px;
       height: 18px;
-      fill: #ffffff;
-    }
-
-    .callout-content {
-      font-size: 12px;
-      color: #1a2233;
-      line-height: 1.45;
-      font-weight: 500;
-      padding-left: 2px;
-      flex: 1;
-    }
-
-    .btn-explore-now {
-      background: #000000;
-      color: #ffffff;
-      padding: 8px 16px;
-      border-radius: 6px;
-      font-size: 12px;
-      font-weight: 600;
-      text-decoration: none;
-      white-space: nowrap;
-      transition: all 0.2s;
+      border: 1.5px solid #ffffff;
+      border-radius: 50%;
       display: inline-flex;
       align-items: center;
-      gap: 6px;
+      justify-content: center;
+      font-size: 8px;
+      padding-left: 1px;
     }
 
-    .btn-explore-now:hover {
-      background: #222;
-      transform: translateY(-1px);
-    }
-
-    /* Right Column: Visual Stage Cards */
-    .hero-stage {
-      position: relative;
+    /* Right Interactive Showcase Assembly */
+    .hero-showcase {
       display: flex;
-      align-items: center;
-      justify-content: flex-end;
-    }
-
-    .widget-container {
-      position: relative;
+      flex-direction: column;
+      align-items: flex-end;
       width: 100%;
-      max-width: 610px;
     }
 
-    /* Glass Panels */
-    .glass-card {
-      background: rgba(8, 17, 34, 0.72);
-      border: 1px solid var(--border-glass);
-      border-radius: 16px;
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.55);
+    .showcase-container {
+      width: 100%;
+      max-width: 680px;
       position: relative;
     }
 
-    .glass-card::before {
+    /* Main Frosted Glass Card enclosing Detection and Subtopic panels */
+    .glass-assembly {
+      display: grid;
+      grid-template-columns: 1fr 200px;
+      background: var(--card-bg);
+      border: 1px solid var(--border-glass);
+      border-radius: 20px;
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .glass-assembly::before {
       content: '';
       position: absolute;
       top: 0; left: 0; right: 0; height: 1px;
-      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.22), transparent);
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.28), transparent);
     }
 
-    .main-detection-card {
-      padding: 18px;
-      width: 82%;
+    /* Left Detection Panel */
+    .panel-detector {
+      padding: 16px 18px;
+      border-right: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
     }
 
-    /* Search input bar */
-    .search-box {
+    /* Search Bar */
+    .search-bar {
       display: flex;
       align-items: center;
       gap: 10px;
-      background: rgba(14, 25, 45, 0.85);
-      border: 1px solid var(--border-glass);
+      background: rgba(6, 14, 28, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.14);
       border-radius: 12px;
       padding: 8px 12px;
-      margin-bottom: 12px;
       transition: border-color 0.2s;
     }
 
-    .search-box:focus-within {
+    .search-bar:focus-within {
       border-color: var(--accent-blue);
-      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25);
+    }
+
+    .search-icon {
+      width: 14px;
+      height: 14px;
+      stroke: rgba(255, 255, 255, 0.65);
+      fill: none;
+      stroke-width: 2;
     }
 
     .search-input {
@@ -333,130 +301,144 @@
       background: transparent;
       border: none;
       outline: none;
-      color: var(--cream);
+      color: #ffffff;
       font-family: var(--font-body);
-      font-size: 13.5px;
+      font-size: 13px;
     }
 
-    .search-btn {
+    .search-submit {
+      width: 26px;
+      height: 26px;
+      border-radius: 8px;
       background: rgba(255, 255, 255, 0.08);
       border: 1px solid var(--border-glass);
-      color: var(--cream);
-      width: 28px;
-      height: 28px;
-      border-radius: 8px;
-      cursor: pointer;
+      color: #ffffff;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 14px;
+      cursor: pointer;
+      font-size: 13px;
       transition: all 0.2s;
     }
 
-    .search-btn:hover {
+    .search-submit:hover {
       background: var(--cream);
-      color: #0c1322;
+      color: #0c1424;
     }
 
-    /* Result Row Units */
-    .row-card {
-      background: rgba(12, 23, 44, 0.65);
+    /* Detection Item Cards */
+    .card-item {
+      background: var(--inner-card-bg);
       border: 1px solid rgba(255, 255, 255, 0.07);
       border-radius: 12px;
-      padding: 11px 14px;
-      margin-bottom: 9px;
+      padding: 10px 14px;
       transition: all 0.2s;
     }
 
-    .row-card:last-child {
-      margin-bottom: 0;
-    }
-
-    .row-card:hover {
-      background: rgba(18, 33, 62, 0.75);
+    .card-item:hover {
+      background: rgba(18, 34, 68, 0.75);
       border-color: var(--border-glass-bright);
     }
 
-    .row-header {
+    .card-item-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 8px;
-      margin-bottom: 5px;
+      margin-bottom: 4px;
     }
 
-    .row-label {
-      font-size: 11.5px;
+    .card-item-label {
+      font-size: 11px;
       font-weight: 600;
-      color: var(--text-dim);
+      color: var(--text-muted);
       display: flex;
       align-items: center;
-      gap: 5px;
+      gap: 6px;
     }
 
-    .row-text {
-      font-size: 13.5px;
+    .icon-plus {
+      width: 12px;
+      height: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 9px;
+      color: rgba(255, 255, 255, 0.8);
+    }
+
+    .card-item-text {
+      font-size: 13px;
       font-weight: 500;
-      color: var(--text-main);
+      color: #ffffff;
       line-height: 1.35;
     }
 
-    .row-footer {
+    .card-item-sub {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 2px;
+    }
+
+    .card-item-score {
       font-family: var(--font-mono);
       font-size: 11px;
       color: var(--text-dim);
-      margin-top: 5px;
+      white-space: nowrap;
     }
 
-    /* Status Pills */
-    .pill {
+    /* Badges matching reference mockup */
+    .badge-pill {
       display: inline-flex;
       align-items: center;
       gap: 5px;
-      font-size: 10.5px;
+      font-size: 10px;
       font-weight: 700;
-      text-transform: capitalize;
       letter-spacing: 0.3px;
       padding: 3px 9px;
       border-radius: 9999px;
       white-space: nowrap;
     }
 
-    .pill-green {
-      background: rgba(16, 185, 129, 0.16);
-      border: 1px solid rgba(16, 185, 129, 0.35);
-      color: #34d399;
+    .badge-different {
+      background: rgba(34, 197, 94, 0.16);
+      border: 1px solid rgba(34, 197, 94, 0.4);
+      color: #4ade80;
     }
 
-    .pill-amber {
+    .badge-semantic {
       background: rgba(245, 158, 11, 0.16);
-      border: 1px solid rgba(245, 158, 11, 0.35);
+      border: 1px solid rgba(245, 158, 11, 0.4);
       color: #fbbf24;
     }
 
-    .pill-dot {
+    .badge-dot {
       width: 5px;
       height: 5px;
       border-radius: 50%;
       background: currentColor;
     }
 
-    /* Subtopic Coverage Floating Card */
-    .coverage-floating-card {
-      position: absolute;
-      top: 14px;
-      right: 0;
-      width: 40%;
+    .badge-check {
+      font-size: 9px;
+    }
+
+    /* Right Subtopic Coverage Panel */
+    .panel-coverage {
       padding: 16px;
-      background: rgba(8, 16, 32, 0.85);
-      z-index: 3;
+      background: rgba(7, 16, 32, 0.7);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
     }
 
     .coverage-title {
-      font-size: 12.5px;
+      font-size: 12px;
       font-weight: 700;
-      color: var(--cream);
-      margin-bottom: 12px;
+      color: #ffffff;
+      margin-bottom: 10px;
     }
 
     .cov-item {
@@ -464,12 +446,16 @@
       align-items: center;
       justify-content: space-between;
       margin-bottom: 8px;
-      font-size: 11.5px;
+      font-size: 11px;
+    }
+
+    .cov-item:last-child {
+      margin-bottom: 0;
     }
 
     .cov-name {
       color: var(--text-muted);
-      width: 105px;
+      width: 90px;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -491,31 +477,110 @@
       transition: width 0.6s ease;
     }
 
+    .cov-bar-amber {
+      background: linear-gradient(90deg, #f59e0b, #fcd34d);
+    }
+
     .cov-val {
       font-family: var(--font-mono);
-      font-size: 10.5px;
+      font-size: 10px;
       color: var(--text-dim);
-      min-width: 32px;
+      min-width: 30px;
       text-align: right;
     }
 
-    /* Responsive adjustments for viewport fit */
-    @media (max-height: 750px) {
-      .headline { font-size: 46px; margin-bottom: 14px; }
-      .subheading { margin-bottom: 18px; font-size: 11px; }
-      .hero-actions { margin-bottom: 22px; }
-      .page-layout { padding: 18px 36px 20px; }
-      .callout-box { padding: 10px 14px; }
+    /* Bottom Callout Banner matching reference position under the cards */
+    .callout-wrapper {
+      position: relative;
+      margin-top: 14px;
+      width: calc(100% - 20px);
+    }
+
+    .callout-star-badge {
+      position: absolute;
+      top: -14px;
+      left: 12px;
+      width: 28px;
+      height: 28px;
+      background: #000000;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+      z-index: 3;
+    }
+
+    .callout-star-badge svg {
+      width: 16px;
+      height: 16px;
+      fill: #ffffff;
+    }
+
+    .callout-banner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      background: var(--banner-bg);
+      border-radius: 6px;
+      padding: 12px 14px 12px 16px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+    }
+
+    .callout-text {
+      font-size: 11.5px;
+      color: var(--banner-text);
+      line-height: 1.42;
+      font-weight: 500;
+      flex: 1;
+    }
+
+    .btn-explore-now {
+      background: #000000;
+      color: #ffffff;
+      padding: 8px 16px;
+      border-radius: 4px;
+      font-size: 11.5px;
+      font-weight: 600;
+      text-decoration: none;
+      white-space: nowrap;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-explore-now:hover {
+      background: #222222;
+      transform: translateY(-1px);
+    }
+
+    /* Responsive scaling to guarantee non-scrollable fit on any display */
+    @media (max-height: 720px) {
+      .hero-title { font-size: 40px; margin-bottom: 12px; }
+      .hero-subtitle { margin-bottom: 18px; }
+      .page-shell { padding: 12px 32px 14px; }
+      .panel-detector { padding: 12px 14px; gap: 8px; }
+      .card-item { padding: 8px 12px; }
+      .callout-banner { padding: 10px 12px; }
+    }
+
+    @media (max-width: 980px) {
+      .hero-main { grid-template-columns: 1fr; }
+      .glass-assembly { grid-template-columns: 1fr; }
+      .panel-coverage { display: none; }
+      .nav-links { display: none; }
     }
   </style>
 </head>
 <body>
-  <!-- Clean Photo Cloud Sky Background -->
+  <!-- Clean Photographic Dithered Cloud Sky Background -->
   <div class="bg-sky"></div>
   <div class="bg-halftone-overlay"></div>
 
-  <div class="page-layout">
-    <!-- Navbar -->
+  <div class="page-shell">
+    <!-- Top Header -->
     <header>
       <a href="/" class="brand">
         <svg class="brand-star" viewBox="0 0 24 24">
@@ -524,7 +589,7 @@
         <span>DejaQ</span>
       </a>
 
-      <ul class="nav-menu">
+      <ul class="nav-links">
         <li><a href="/dashboard">Product</a></li>
         <li><a href="/dashboard#architecture">How it works</a></li>
         <li><a href="/dashboard#collection">Question Bank</a></li>
@@ -532,130 +597,149 @@
         <li><a href="https://github.com/palakbhatt1/DejaQ" target="_blank">Contact</a></li>
       </ul>
 
-      <a href="/dashboard" class="btn-pill-cream">
+      <a href="/dashboard" class="btn-get-started">
         Get started &rarr;
       </a>
     </header>
 
-    <!-- Hero Content -->
-    <main class="hero-center">
-      <!-- Left Column -->
+    <!-- Main Hero Center Stage -->
+    <main class="hero-main">
+      <!-- Left Column: Typography & CTAs -->
       <div class="hero-copy">
-        <h1 class="headline">
+        <h1 class="hero-title">
           Generate Better<br>
           Questions.<br>
           Not Duplicates.
         </h1>
-        <p class="subheading">
+
+        <p class="hero-subtitle">
           AI-POWERED QUESTION GENERATION<br>
           WITH SEMANTIC DEDUPLICATION
         </p>
 
-        <div class="hero-actions">
-          <a href="/dashboard" class="btn-pill-cream">
+        <div class="hero-buttons">
+          <a href="/dashboard" class="btn-get-started">
             Get started &rarr;
           </a>
-          <button class="btn-pill-glass" onclick="playLiveDemo()">
-            Watch demo &#9655;
+          <button class="btn-watch-demo" onclick="playLiveDemo()">
+            Watch demo <span class="play-circle">&#9655;</span>
           </button>
-        </div>
-
-        <!-- Callout Banner -->
-        <div class="callout-box">
-          <div class="callout-star-badge">
-            <svg viewBox="0 0 24 24">
-              <path d="M12 0L14.4 8.6L23 11L14.4 13.4L12 22L9.6 13.4L1 11L9.6 8.6Z" />
-            </svg>
-          </div>
-          <div class="callout-content">
-            DejaQ helps you generate diverse, high-quality questions with coverage-aware generation and a multi-stage semantic deduplication pipeline — so every question in your bank is unique.
-          </div>
-          <a href="/dashboard" class="btn-explore-now">
-            Explore Now &rarr;
-          </a>
         </div>
       </div>
 
-      <!-- Right Column: Interactive Reference Widget -->
-      <div class="hero-stage">
-        <div class="widget-container">
-          <!-- Main Detection Card -->
-          <div class="glass-card main-detection-card">
-            <!-- Search / Check Input -->
-            <div class="search-box">
-              <span style="opacity: 0.6; font-size: 13px;">&#128269;</span>
-              <input id="demo-input" type="text" class="search-input" value="What is the reflection of light?" placeholder="Type candidate question...">
-              <button class="search-btn" onclick="executeCheck()" title="Check question">&rarr;</button>
+      <!-- Right Column: Interactive Glass Card Assembly & Callout -->
+      <div class="hero-showcase">
+        <div class="showcase-container">
+          <!-- Glass Card Assembly -->
+          <div class="glass-assembly">
+            <!-- Left Detection Panel -->
+            <div class="panel-detector">
+              <!-- Search Input Bar -->
+              <div class="search-bar">
+                <svg class="search-icon" viewBox="0 0 24 24">
+                  <circle cx="11" cy="11" r="8"></circle>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+                <input id="demo-input" type="text" class="search-input" value="What is the reflection of light?" placeholder="What is the reflection of light?">
+                <button class="search-submit" onclick="executeCheck()" title="Check question">&rarr;</button>
+              </div>
+
+              <!-- Candidate Card -->
+              <div class="card-item">
+                <div class="card-item-header">
+                  <span class="card-item-label">
+                    <span class="icon-plus">+</span> Your question (candidate)
+                  </span>
+                  <span id="demo-verdict-pill" class="badge-pill badge-different">
+                    <span class="badge-check">&#10003;</span> Different
+                  </span>
+                </div>
+                <div id="demo-candidate-text" class="card-item-text">What is the reflection of light?</div>
+              </div>
+
+              <!-- Closest Match Card -->
+              <div class="card-item">
+                <div class="card-item-header">
+                  <span class="card-item-label">
+                    <span class="icon-plus">+</span> Closest match in bank
+                  </span>
+                  <span id="demo-match-pill" class="badge-pill badge-semantic">
+                    <span class="badge-dot"></span> Semantic duplicate
+                  </span>
+                </div>
+                <div class="card-item-sub">
+                  <span id="demo-match-text" class="card-item-text">Define the reflection of light.</span>
+                  <span id="demo-match-score" class="card-item-score">Similarity: 0.92</span>
+                </div>
+              </div>
+
+              <!-- Another Similar Question Card -->
+              <div class="card-item">
+                <div class="card-item-header">
+                  <span class="card-item-label">
+                    <span class="icon-plus">+</span> Another similar question
+                  </span>
+                  <span class="badge-pill badge-semantic">
+                    <span class="badge-dot"></span> Semantic duplicate
+                  </span>
+                </div>
+                <div class="card-item-sub">
+                  <span class="card-item-text">Which phenomenon is known as reflection of light?</span>
+                  <span class="card-item-score">Similarity: 0.88</span>
+                </div>
+              </div>
             </div>
 
-            <!-- Candidate Row -->
-            <div class="row-card">
-              <div class="row-header">
-                <span class="row-label">&#65291; Your question (candidate)</span>
-                <span id="demo-verdict-pill" class="pill pill-green">
-                  <span class="pill-dot"></span> Different
-                </span>
-              </div>
-              <div id="demo-candidate-text" class="row-text">What is the reflection of light?</div>
-            </div>
+            <!-- Right Subtopic Coverage Panel -->
+            <div class="panel-coverage">
+              <div class="coverage-title">Subtopic Coverage</div>
 
-            <!-- Closest Match Row -->
-            <div class="row-card">
-              <div class="row-header">
-                <span class="row-label">&#65291; Closest match in bank</span>
-                <span id="demo-match-pill" class="pill pill-amber">
-                  <span class="pill-dot"></span> Semantic duplicate
-                </span>
+              <div class="cov-item">
+                <span class="cov-name">Definitions</span>
+                <div class="cov-track"><div class="cov-bar" style="width: 70%;"></div></div>
+                <span class="cov-val">28/40</span>
               </div>
-              <div id="demo-match-text" class="row-text">Define the reflection of light.</div>
-              <div id="demo-match-footer" class="row-footer">Similarity: 0.920</div>
-            </div>
 
-            <!-- Another Similar Question Row -->
-            <div class="row-card">
-              <div class="row-header">
-                <span class="row-label">&#65291; Another similar question</span>
-                <span class="pill pill-amber">
-                  <span class="pill-dot"></span> Semantic duplicate
-                </span>
+              <div class="cov-item">
+                <span class="cov-name">Laws &amp; Rules</span>
+                <div class="cov-track"><div class="cov-bar" style="width: 30%;"></div></div>
+                <span class="cov-val">12/40</span>
               </div>
-              <div class="row-text">Which phenomenon is known as reflection of light?</div>
-              <div class="row-footer">Similarity: 0.880</div>
+
+              <div class="cov-item">
+                <span class="cov-name">Numerical Problems</span>
+                <div class="cov-track"><div class="cov-bar cov-bar-amber" style="width: 20%;"></div></div>
+                <span class="cov-val">8/40</span>
+              </div>
+
+              <div class="cov-item">
+                <span class="cov-name">Applications</span>
+                <div class="cov-track"><div class="cov-bar" style="width: 50%;"></div></div>
+                <span class="cov-val">20/40</span>
+              </div>
+
+              <div class="cov-item">
+                <span class="cov-name">Diagrams &amp; Concepts</span>
+                <div class="cov-track"><div class="cov-bar" style="width: 40%;"></div></div>
+                <span class="cov-val">16/40</span>
+              </div>
             </div>
           </div>
 
-          <!-- Floating Subtopic Coverage Card -->
-          <div class="glass-card coverage-floating-card">
-            <div class="coverage-title">Subtopic Coverage</div>
-
-            <div class="cov-item">
-              <span class="cov-name">Definitions</span>
-              <div class="cov-track"><div class="cov-bar" style="width: 70%;"></div></div>
-              <span class="cov-val">28/40</span>
+          <!-- Bottom Callout Banner matching reference position under the cards -->
+          <div class="callout-wrapper">
+            <div class="callout-star-badge">
+              <svg viewBox="0 0 24 24">
+                <path d="M12 0L14.4 8.6L23 11L14.4 13.4L12 22L9.6 13.4L1 11L9.6 8.6Z" />
+              </svg>
             </div>
-
-            <div class="cov-item">
-              <span class="cov-name">Laws &amp; Rules</span>
-              <div class="cov-track"><div class="cov-bar" style="width: 30%;"></div></div>
-              <span class="cov-val">12/40</span>
-            </div>
-
-            <div class="cov-item">
-              <span class="cov-name">Numerical Problems</span>
-              <div class="cov-track"><div class="cov-bar" style="width: 20%; background: linear-gradient(90deg, #f59e0b, #fcd34d);"></div></div>
-              <span class="cov-val">8/40</span>
-            </div>
-
-            <div class="cov-item">
-              <span class="cov-name">Applications</span>
-              <div class="cov-track"><div class="cov-bar" style="width: 50%;"></div></div>
-              <span class="cov-val">20/40</span>
-            </div>
-
-            <div class="cov-item">
-              <span class="cov-name">Diagrams &amp; Concepts</span>
-              <div class="cov-track"><div class="cov-bar" style="width: 40%;"></div></div>
-              <span class="cov-val">16/40</span>
+            <div class="callout-banner">
+              <div class="callout-text">
+                DejaQ helps you generate diverse, high-quality questions with coverage-aware generation and a multi-stage semantic deduplication pipeline — so every question in your bank is unique.
+              </div>
+              <a href="/dashboard" class="btn-explore-now">
+                Explore Now &rarr;
+              </a>
             </div>
           </div>
         </div>
@@ -680,18 +764,18 @@
         
         $('demo-candidate-text').textContent = q;
         if (data.verdict === 'different') {
-          $('demo-verdict-pill').className = 'pill pill-green';
-          $('demo-verdict-pill').innerHTML = '<span class="pill-dot"></span> Different';
+          $('demo-verdict-pill').className = 'badge-pill badge-different';
+          $('demo-verdict-pill').innerHTML = '<span class="badge-check">&#10003;</span> Different';
         } else {
-          $('demo-verdict-pill').className = 'pill pill-amber';
-          $('demo-verdict-pill').innerHTML = `<span class="pill-dot"></span> ${data.verdict.replace('_', ' ')}`;
+          $('demo-verdict-pill').className = 'badge-pill badge-semantic';
+          $('demo-verdict-pill').innerHTML = `<span class="badge-dot"></span> ${data.verdict.replace('_', ' ')}`;
         }
 
         if (data.match) {
           $('demo-match-text').textContent = data.match;
-          $('demo-match-footer').textContent = `Similarity: ${data.score.toFixed(3)}`;
-          $('demo-match-pill').className = data.verdict === 'exact_duplicate' ? 'pill pill-amber' : 'pill pill-amber';
-          $('demo-match-pill').innerHTML = `<span class="pill-dot"></span> ${data.verdict.replace('_', ' ')}`;
+          $('demo-match-score').textContent = `Similarity: ${data.score.toFixed(2)}`;
+          $('demo-match-pill').className = 'badge-pill badge-semantic';
+          $('demo-match-pill').innerHTML = `<span class="badge-dot"></span> ${data.verdict.replace('_', ' ')}`;
         }
       } catch (e) {
         console.error(e);
