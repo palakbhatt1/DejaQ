@@ -1,91 +1,725 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>DejaQ</title>
-<style>
-:root{--fg:#111;--mut:#666;--line:#ddd;--bg:#fff}
-@media(prefers-color-scheme:dark){:root{--fg:#eee;--mut:#999;--line:#333;--bg:#111}}
-*{box-sizing:border-box}
-body{font:15px/1.5 system-ui,sans-serif;max-width:880px;margin:32px auto;padding:0 16px;color:var(--fg);background:var(--bg)}
-h1{font-size:20px;margin-bottom:2px} h2{font-size:15px;margin:28px 0 8px;border-bottom:1px solid var(--line);padding-bottom:4px}
-input,button{font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:4px;color:var(--fg);background:var(--bg)}
-button{background:var(--fg);color:var(--bg);cursor:pointer;border-color:var(--fg)} button:disabled{opacity:.5;cursor:wait}
-button.ghost{background:transparent;color:var(--fg)}
-.bar{display:flex;gap:8px;flex-wrap:wrap} .bar input[type=text]{flex:1;min-width:200px}
-.row{border:1px solid var(--line);padding:8px 10px;margin:6px 0;border-radius:4px}
-.tag{font-size:12px;border:1px solid var(--line);padding:0 6px;border-radius:3px;margin-right:6px;white-space:nowrap}
-.v{font-weight:600}.mut{color:var(--mut);font-size:13px}.err{color:#b00020}
-table{border-collapse:collapse;width:100%;font-size:13px} td,th{border-bottom:1px solid var(--line);padding:4px 6px;text-align:left}
-.sub{color:var(--mut);margin:0 0 16px}
-</style></head><body>
-<h1>Question duplicate detector</h1>
-<p class="sub">Exact → semantic → LLM-judged. Content only; tags are never used for dedup.</p>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DejaQ — Generate Better Questions. Not Duplicates.</title>
+  <meta name="description" content="AI-powered question generation with coverage-aware planning and semantic deduplication.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #050b16;
+      --card-bg: rgba(9, 18, 35, 0.72);
+      --border-glass: rgba(255, 255, 255, 0.12);
+      --border-glass-bright: rgba(255, 255, 255, 0.22);
+      --text-main: #f5efe6;
+      --text-muted: #94a5bd;
+      --text-dim: #62748e;
+      --cream: #f2eee3;
+      --cream-hover: #ffffff;
+      --accent-green: #10b981;
+      --accent-amber: #f59e0b;
+      --accent-blue: #3b82f6;
+      --accent-red: #ef4444;
+      --font-body: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      --font-mono: 'Space Grotesk', monospace;
+    }
 
-<h2>Check a question</h2>
-<div class="bar"><input id="q" type="text" placeholder="e.g. Define the reflection of light.">
-<button id="bcheck" onclick="check()">Check</button></div>
-<div id="res"></div>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
 
-<h2>Generate</h2>
-<div class="bar"><input id="topic" type="text" value="reflection of light">
-<input id="n" type="number" min="1" max="15" value="5" style="width:70px">
-<button id="bgen" onclick="gen()">Generate</button></div>
-<div id="gen"></div>
+    /* Strictly non-scrollable landing page */
+    html, body {
+      width: 100%;
+      height: 100vh;
+      max-height: 100vh;
+      overflow: hidden;
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      font-family: var(--font-body);
+      position: relative;
+    }
 
-<h2>Collection (<span id="cnt">0</span>)</h2>
-<div class="bar"><input id="tk" type="text" placeholder="filter by tag key" style="flex:0 1 180px">
-<input id="tv" type="text" placeholder="value (optional)" style="flex:0 1 180px">
-<button class="ghost" onclick="load()">Filter</button></div>
-<div id="list"></div>
+    /* Photographic Background Layer */
+    .bg-sky {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: url('/assets/hero_bg_full.jpg') center center / cover no-repeat;
+      opacity: 0.85;
+      z-index: 0;
+      pointer-events: none;
+    }
 
-<script>
-const $=id=>document.getElementById(id);
-const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-async function api(url,body){
-  const r=await fetch(url,body?{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)}:{});
-  const j=await r.json().catch(()=>({}));
-  return {ok:r.ok,status:r.status,data:j};
-}
-const label=v=>esc(v.replace("_"," "));
-function row(q,r,extra=""){
-  const nb=(r.neighbors||[]).map(n=>`<div class="mut">${n.score.toFixed(3)} · ${esc(n.text)}</div>`).join("");
-  return `<div class="row"><span class="v">${label(r.verdict)}</span>
-  <span class="tag">${r.score.toFixed(3)}</span><span class="tag">${esc(r.stage)}</span>${r.numeric_guard?'<span class="tag">numeric guard</span>':""}
-  <br>${esc(q)}${r.match?`<div class="mut">matched: ${esc(r.match)}</div>`:""}
-  ${r.reason?`<div class="mut">judge: ${esc(r.reason)}</div>`:""}${nb?`<details><summary class="mut">neighbors</summary>${nb}</details>`:""}${extra}</div>`;
-}
-async function check(){
-  const q=$("q").value.trim(); if(q.length<3) return;
-  $("bcheck").disabled=true;
-  const {ok,data}=await api("/api/check",{question:q});
-  $("bcheck").disabled=false;
-  if(!ok){$("res").innerHTML=`<div class="row err">Request failed</div>`;return}
-  const canAdd=data.verdict==="different"||data.verdict==="review";
-  const btn=canAdd?`<br><button class="ghost" onclick="add(${data.verdict==="review"})">Add to collection${data.verdict==="review"?" (human override)":""}</button>`:"";
-  $("res").innerHTML=row(q,data,btn);
-}
-async function add(force){
-  const q=$("q").value.trim();
-  const {ok,data}=await api("/api/questions",{question:q,tags:{source:"manual"},force});
-  $("res").innerHTML=ok?`<div class="row">Added.</div>`:`<div class="row err">Not added: ${esc((data.detail||{}).verdict||"error")}</div>`;
-  load();
-}
-async function gen(){
-  $("bgen").disabled=true; $("gen").innerHTML='<p class="mut">Planning subtopics and generating…</p>';
-  const {ok,data}=await api("/api/generate",{topic:$("topic").value,n:+$("n").value});
-  $("bgen").disabled=false;
-  if(!ok){$("gen").innerHTML=`<div class="row err">Request failed (${data.detail?esc(JSON.stringify(data.detail)):"error"})</div>`;return}
-  const plan=(data.plan||[]).length?`<b>Coverage plan</b> <span class="mut">(lower = less covered, targeted first)</span>
-   <table><tr><th>Subtopic</th><th>Coverage</th></tr>${data.plan.map(p=>`<tr><td>${esc(p.subtopic)}</td><td>${p.coverage.toFixed(3)}</td></tr>`).join("")}</table>`:"";
-  $("gen").innerHTML=(data.error?`<div class="row err">${esc(data.error)}</div>`:"")+plan+
-   `<p><b>Accepted (${data.accepted.length})</b></p>`+data.accepted.map(a=>row(a.question,a)).join("")+
-   `<p><b>Rejected (${data.rejected.length})</b></p>`+data.rejected.map(a=>row(a.question,a)).join("");
-  load();
-}
-async function load(){
-  const p=new URLSearchParams(); if($("tk").value) p.set("tag_key",$("tk").value); if($("tv").value) p.set("tag_value",$("tv").value);
-  const {data}=await api("/api/questions?"+p);
-  $("cnt").textContent=data.length;
-  $("list").innerHTML=data.map(x=>`<div class="row">${esc(x.question)}<br>${Object.entries(x.tags).map(([k,v])=>`<span class="tag">${esc(k)}: ${esc(v)}</span>`).join("")}</div>`).join("");
-}
-load();
-</script></body></html>
+    /* Halftone Stipple Texture Overlay */
+    .bg-halftone-overlay {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background-image: radial-gradient(circle, rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+      background-size: 10px 10px;
+      mix-blend-mode: overlay;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* Overall Layout Shell */
+    .page-layout {
+      position: relative;
+      z-index: 2;
+      width: 100%;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 24px 44px 28px;
+    }
+
+    /* Top Navigation Bar */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      height: 52px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+      color: var(--cream);
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+    }
+
+    .brand-star {
+      width: 22px;
+      height: 22px;
+      display: inline-block;
+      fill: #ffffff;
+      filter: drop-shadow(0 0 6px rgba(255,255,255,0.7));
+    }
+
+    .nav-menu {
+      display: flex;
+      align-items: center;
+      gap: 32px;
+      list-style: none;
+    }
+
+    .nav-menu a {
+      color: rgba(245, 239, 230, 0.85);
+      text-decoration: none;
+      font-size: 13.5px;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+
+    .nav-menu a:hover {
+      color: #ffffff;
+    }
+
+    .btn-pill-cream {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--cream);
+      color: #0c1322;
+      padding: 9px 22px;
+      border-radius: 9999px;
+      font-size: 13.5px;
+      font-weight: 600;
+      text-decoration: none;
+      border: 1px solid var(--cream);
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 4px 14px rgba(0,0,0,0.3);
+      cursor: pointer;
+    }
+
+    .btn-pill-cream:hover {
+      background: #ffffff;
+      transform: translateY(-2px);
+      box-shadow: 0 8px 22px rgba(242, 238, 227, 0.3);
+    }
+
+    /* Hero Center Stage */
+    .hero-center {
+      display: grid;
+      grid-template-columns: 1fr 1.16fr;
+      gap: 40px;
+      align-items: center;
+      flex: 1;
+      min-height: 0;
+      margin: 12px 0;
+    }
+
+    /* Left Column */
+    .hero-copy {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      max-width: 530px;
+    }
+
+    .headline {
+      font-size: 58px;
+      font-weight: 800;
+      line-height: 1.05;
+      letter-spacing: -1.8px;
+      color: var(--cream);
+      margin-bottom: 20px;
+    }
+
+    .subheading {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      letter-spacing: 1.6px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      line-height: 1.6;
+      margin-bottom: 30px;
+    }
+
+    .hero-actions {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 36px;
+    }
+
+    .btn-pill-glass {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(14, 25, 45, 0.45);
+      color: var(--cream);
+      border: 1px solid var(--border-glass-bright);
+      padding: 9px 22px;
+      border-radius: 9999px;
+      font-size: 13.5px;
+      font-weight: 600;
+      text-decoration: none;
+      backdrop-filter: blur(12px);
+      transition: all 0.2s;
+      cursor: pointer;
+    }
+
+    .btn-pill-glass:hover {
+      background: rgba(255, 255, 255, 0.12);
+      border-color: rgba(255, 255, 255, 0.4);
+      transform: translateY(-2px);
+    }
+
+    /* Callout Banner Box */
+    .callout-box {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      background: rgba(220, 215, 205, 0.88);
+      border-radius: 12px;
+      padding: 12px 16px;
+      position: relative;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    }
+
+    .callout-star-badge {
+      position: absolute;
+      top: -18px;
+      left: 16px;
+      width: 32px;
+      height: 32px;
+      background: #000000;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+    }
+
+    .callout-star-badge svg {
+      width: 18px;
+      height: 18px;
+      fill: #ffffff;
+    }
+
+    .callout-content {
+      font-size: 12px;
+      color: #1a2233;
+      line-height: 1.45;
+      font-weight: 500;
+      padding-left: 2px;
+      flex: 1;
+    }
+
+    .btn-explore-now {
+      background: #000000;
+      color: #ffffff;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      text-decoration: none;
+      white-space: nowrap;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-explore-now:hover {
+      background: #222;
+      transform: translateY(-1px);
+    }
+
+    /* Right Column: Visual Stage Cards */
+    .hero-stage {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+    }
+
+    .widget-container {
+      position: relative;
+      width: 100%;
+      max-width: 610px;
+    }
+
+    /* Glass Panels */
+    .glass-card {
+      background: rgba(8, 17, 34, 0.72);
+      border: 1px solid var(--border-glass);
+      border-radius: 16px;
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.55);
+      position: relative;
+    }
+
+    .glass-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.22), transparent);
+    }
+
+    .main-detection-card {
+      padding: 18px;
+      width: 82%;
+    }
+
+    /* Search input bar */
+    .search-box {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(14, 25, 45, 0.85);
+      border: 1px solid var(--border-glass);
+      border-radius: 12px;
+      padding: 8px 12px;
+      margin-bottom: 12px;
+      transition: border-color 0.2s;
+    }
+
+    .search-box:focus-within {
+      border-color: var(--accent-blue);
+      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+    }
+
+    .search-input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--cream);
+      font-family: var(--font-body);
+      font-size: 13.5px;
+    }
+
+    .search-btn {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid var(--border-glass);
+      color: var(--cream);
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      transition: all 0.2s;
+    }
+
+    .search-btn:hover {
+      background: var(--cream);
+      color: #0c1322;
+    }
+
+    /* Result Row Units */
+    .row-card {
+      background: rgba(12, 23, 44, 0.65);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      border-radius: 12px;
+      padding: 11px 14px;
+      margin-bottom: 9px;
+      transition: all 0.2s;
+    }
+
+    .row-card:last-child {
+      margin-bottom: 0;
+    }
+
+    .row-card:hover {
+      background: rgba(18, 33, 62, 0.75);
+      border-color: var(--border-glass-bright);
+    }
+
+    .row-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 5px;
+    }
+
+    .row-label {
+      font-size: 11.5px;
+      font-weight: 600;
+      color: var(--text-dim);
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .row-text {
+      font-size: 13.5px;
+      font-weight: 500;
+      color: var(--text-main);
+      line-height: 1.35;
+    }
+
+    .row-footer {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-dim);
+      margin-top: 5px;
+    }
+
+    /* Status Pills */
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 10.5px;
+      font-weight: 700;
+      text-transform: capitalize;
+      letter-spacing: 0.3px;
+      padding: 3px 9px;
+      border-radius: 9999px;
+      white-space: nowrap;
+    }
+
+    .pill-green {
+      background: rgba(16, 185, 129, 0.16);
+      border: 1px solid rgba(16, 185, 129, 0.35);
+      color: #34d399;
+    }
+
+    .pill-amber {
+      background: rgba(245, 158, 11, 0.16);
+      border: 1px solid rgba(245, 158, 11, 0.35);
+      color: #fbbf24;
+    }
+
+    .pill-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    /* Subtopic Coverage Floating Card */
+    .coverage-floating-card {
+      position: absolute;
+      top: 14px;
+      right: 0;
+      width: 40%;
+      padding: 16px;
+      background: rgba(8, 16, 32, 0.85);
+      z-index: 3;
+    }
+
+    .coverage-title {
+      font-size: 12.5px;
+      font-weight: 700;
+      color: var(--cream);
+      margin-bottom: 12px;
+    }
+
+    .cov-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      font-size: 11.5px;
+    }
+
+    .cov-name {
+      color: var(--text-muted);
+      width: 105px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .cov-track {
+      flex: 1;
+      height: 5px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 999px;
+      margin: 0 8px;
+      overflow: hidden;
+    }
+
+    .cov-bar {
+      height: 100%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #3b82f6, #93c5fd);
+      transition: width 0.6s ease;
+    }
+
+    .cov-val {
+      font-family: var(--font-mono);
+      font-size: 10.5px;
+      color: var(--text-dim);
+      min-width: 32px;
+      text-align: right;
+    }
+
+    /* Responsive adjustments for viewport fit */
+    @media (max-height: 750px) {
+      .headline { font-size: 46px; margin-bottom: 14px; }
+      .subheading { margin-bottom: 18px; font-size: 11px; }
+      .hero-actions { margin-bottom: 22px; }
+      .page-layout { padding: 18px 36px 20px; }
+      .callout-box { padding: 10px 14px; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Clean Photo Cloud Sky Background -->
+  <div class="bg-sky"></div>
+  <div class="bg-halftone-overlay"></div>
+
+  <div class="page-layout">
+    <!-- Navbar -->
+    <header>
+      <a href="/" class="brand">
+        <svg class="brand-star" viewBox="0 0 24 24">
+          <path d="M12 0L14.4 8.6L23 11L14.4 13.4L12 22L9.6 13.4L1 11L9.6 8.6Z" />
+        </svg>
+        <span>DejaQ</span>
+      </a>
+
+      <ul class="nav-menu">
+        <li><a href="/dashboard">Product</a></li>
+        <li><a href="/dashboard#architecture">How it works</a></li>
+        <li><a href="/dashboard#collection">Question Bank</a></li>
+        <li><a href="/docs" target="_blank">Docs</a></li>
+        <li><a href="https://github.com/palakbhatt1/DejaQ" target="_blank">Contact</a></li>
+      </ul>
+
+      <a href="/dashboard" class="btn-pill-cream">
+        Get started &rarr;
+      </a>
+    </header>
+
+    <!-- Hero Content -->
+    <main class="hero-center">
+      <!-- Left Column -->
+      <div class="hero-copy">
+        <h1 class="headline">
+          Generate Better<br>
+          Questions.<br>
+          Not Duplicates.
+        </h1>
+        <p class="subheading">
+          AI-POWERED QUESTION GENERATION<br>
+          WITH SEMANTIC DEDUPLICATION
+        </p>
+
+        <div class="hero-actions">
+          <a href="/dashboard" class="btn-pill-cream">
+            Get started &rarr;
+          </a>
+          <button class="btn-pill-glass" onclick="playLiveDemo()">
+            Watch demo &#9655;
+          </button>
+        </div>
+
+        <!-- Callout Banner -->
+        <div class="callout-box">
+          <div class="callout-star-badge">
+            <svg viewBox="0 0 24 24">
+              <path d="M12 0L14.4 8.6L23 11L14.4 13.4L12 22L9.6 13.4L1 11L9.6 8.6Z" />
+            </svg>
+          </div>
+          <div class="callout-content">
+            DejaQ helps you generate diverse, high-quality questions with coverage-aware generation and a multi-stage semantic deduplication pipeline — so every question in your bank is unique.
+          </div>
+          <a href="/dashboard" class="btn-explore-now">
+            Explore Now &rarr;
+          </a>
+        </div>
+      </div>
+
+      <!-- Right Column: Interactive Reference Widget -->
+      <div class="hero-stage">
+        <div class="widget-container">
+          <!-- Main Detection Card -->
+          <div class="glass-card main-detection-card">
+            <!-- Search / Check Input -->
+            <div class="search-box">
+              <span style="opacity: 0.6; font-size: 13px;">&#128269;</span>
+              <input id="demo-input" type="text" class="search-input" value="What is the reflection of light?" placeholder="Type candidate question...">
+              <button class="search-btn" onclick="executeCheck()" title="Check question">&rarr;</button>
+            </div>
+
+            <!-- Candidate Row -->
+            <div class="row-card">
+              <div class="row-header">
+                <span class="row-label">&#65291; Your question (candidate)</span>
+                <span id="demo-verdict-pill" class="pill pill-green">
+                  <span class="pill-dot"></span> Different
+                </span>
+              </div>
+              <div id="demo-candidate-text" class="row-text">What is the reflection of light?</div>
+            </div>
+
+            <!-- Closest Match Row -->
+            <div class="row-card">
+              <div class="row-header">
+                <span class="row-label">&#65291; Closest match in bank</span>
+                <span id="demo-match-pill" class="pill pill-amber">
+                  <span class="pill-dot"></span> Semantic duplicate
+                </span>
+              </div>
+              <div id="demo-match-text" class="row-text">Define the reflection of light.</div>
+              <div id="demo-match-footer" class="row-footer">Similarity: 0.920</div>
+            </div>
+
+            <!-- Another Similar Question Row -->
+            <div class="row-card">
+              <div class="row-header">
+                <span class="row-label">&#65291; Another similar question</span>
+                <span class="pill pill-amber">
+                  <span class="pill-dot"></span> Semantic duplicate
+                </span>
+              </div>
+              <div class="row-text">Which phenomenon is known as reflection of light?</div>
+              <div class="row-footer">Similarity: 0.880</div>
+            </div>
+          </div>
+
+          <!-- Floating Subtopic Coverage Card -->
+          <div class="glass-card coverage-floating-card">
+            <div class="coverage-title">Subtopic Coverage</div>
+
+            <div class="cov-item">
+              <span class="cov-name">Definitions</span>
+              <div class="cov-track"><div class="cov-bar" style="width: 70%;"></div></div>
+              <span class="cov-val">28/40</span>
+            </div>
+
+            <div class="cov-item">
+              <span class="cov-name">Laws &amp; Rules</span>
+              <div class="cov-track"><div class="cov-bar" style="width: 30%;"></div></div>
+              <span class="cov-val">12/40</span>
+            </div>
+
+            <div class="cov-item">
+              <span class="cov-name">Numerical Problems</span>
+              <div class="cov-track"><div class="cov-bar" style="width: 20%; background: linear-gradient(90deg, #f59e0b, #fcd34d);"></div></div>
+              <span class="cov-val">8/40</span>
+            </div>
+
+            <div class="cov-item">
+              <span class="cov-name">Applications</span>
+              <div class="cov-track"><div class="cov-bar" style="width: 50%;"></div></div>
+              <span class="cov-val">20/40</span>
+            </div>
+
+            <div class="cov-item">
+              <span class="cov-name">Diagrams &amp; Concepts</span>
+              <div class="cov-track"><div class="cov-bar" style="width: 40%;"></div></div>
+              <span class="cov-val">16/40</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const $ = id => document.getElementById(id);
+
+    async function executeCheck() {
+      const q = $('demo-input').value.trim();
+      if (!q) return;
+
+      try {
+        const res = await fetch('/api/check', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ question: q })
+        });
+        const data = await res.json();
+        
+        $('demo-candidate-text').textContent = q;
+        if (data.verdict === 'different') {
+          $('demo-verdict-pill').className = 'pill pill-green';
+          $('demo-verdict-pill').innerHTML = '<span class="pill-dot"></span> Different';
+        } else {
+          $('demo-verdict-pill').className = 'pill pill-amber';
+          $('demo-verdict-pill').innerHTML = `<span class="pill-dot"></span> ${data.verdict.replace('_', ' ')}`;
+        }
+
+        if (data.match) {
+          $('demo-match-text').textContent = data.match;
+          $('demo-match-footer').textContent = `Similarity: ${data.score.toFixed(3)}`;
+          $('demo-match-pill').className = data.verdict === 'exact_duplicate' ? 'pill pill-amber' : 'pill pill-amber';
+          $('demo-match-pill').innerHTML = `<span class="pill-dot"></span> ${data.verdict.replace('_', ' ')}`;
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    $('demo-input').addEventListener('keydown', e => {
+      if (e.key === 'Enter') executeCheck();
+    });
+
+    function playLiveDemo() {
+      const questions = [
+        "What is the reflection of light?",
+        "Define the reflection of light.",
+        "State the laws of reflection of light.",
+        "The angle of incidence is 30°. What is the angle of reflection?"
+      ];
+      let i = 0;
+      const interval = setInterval(() => {
+        i++;
+        if (i >= questions.length) {
+          clearInterval(interval);
+          return;
+        }
+        $('demo-input').value = questions[i];
+        executeCheck();
+      }, 2400);
+    }
+  </script>
+</body>
+</html>

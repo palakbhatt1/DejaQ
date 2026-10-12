@@ -36,6 +36,20 @@ class Store:
                 self._save()
             return self.items[-1]
 
+    def delete(self, qid: str, persist: bool = True) -> bool:
+        with self.lock:
+            idx = next((i for i, item in enumerate(self.items) if item["id"] == qid), None)
+            if idx is None:
+                return False
+            del self.items[idx]
+            self.vecs = np.delete(self.vecs, idx, axis=0)
+            self.norms = {}
+            for j, item in enumerate(self.items):
+                self.norms.setdefault(item["norm"], j)
+            if persist and self.path:
+                self._save()
+            return True
+
     # ---- read ----
     def exact(self, norm: str) -> dict | None:
         with self.lock:

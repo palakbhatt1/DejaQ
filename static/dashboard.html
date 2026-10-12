@@ -1,0 +1,1053 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DejaQ Dashboard — Intelligent Deduplication &amp; Generation Studio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #050b16;
+      --card-bg: rgba(9, 18, 35, 0.75);
+      --card-bg-hover: rgba(14, 28, 54, 0.85);
+      --border-glass: rgba(255, 255, 255, 0.12);
+      --border-glass-bright: rgba(255, 255, 255, 0.22);
+      --text-main: #f5efe6;
+      --text-muted: #94a5bd;
+      --text-dim: #62748e;
+      --cream: #f2eee3;
+      --cream-hover: #ffffff;
+      --accent-green: #10b981;
+      --accent-amber: #f59e0b;
+      --accent-blue: #3b82f6;
+      --accent-red: #ef4444;
+      --font-body: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      --font-mono: 'Space Grotesk', monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      font-family: var(--font-body);
+      line-height: 1.6;
+      min-height: 100vh;
+      position: relative;
+    }
+
+    /* Photographic Background Layer - identical to landing page */
+    .bg-sky {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: url('/assets/hero_bg_full.jpg') center top / cover no-repeat;
+      opacity: 0.65;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    /* Halftone Stipple Texture Overlay */
+    .bg-halftone-overlay {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background-image: radial-gradient(circle, rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+      background-size: 10px 10px;
+      mix-blend-mode: overlay;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .container {
+      max-width: 1240px;
+      margin: 0 auto;
+      padding: 0 32px;
+      position: relative;
+      z-index: 2;
+    }
+
+    /* Header matching landing page */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      background: rgba(7, 14, 28, 0.85);
+      border-bottom: 1px solid var(--border-glass);
+    }
+
+    .header-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 68px;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      color: var(--cream);
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+    }
+
+    .brand-star {
+      width: 20px;
+      height: 20px;
+      fill: #ffffff;
+      filter: drop-shadow(0 0 6px rgba(255,255,255,0.7));
+    }
+
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 13.5px;
+      font-weight: 500;
+      transition: color 0.2s;
+      border-left: 1px solid var(--border-glass);
+      padding-left: 20px;
+    }
+
+    .back-link:hover {
+      color: var(--cream);
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    /* Status Pills */
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      padding: 4px 10px;
+      border-radius: 9999px;
+      white-space: nowrap;
+    }
+
+    .pill-green {
+      background: rgba(16, 185, 129, 0.16);
+      border: 1px solid rgba(16, 185, 129, 0.35);
+      color: #34d399;
+    }
+
+    .pill-amber {
+      background: rgba(245, 158, 11, 0.16);
+      border: 1px solid rgba(245, 158, 11, 0.35);
+      color: #fbbf24;
+    }
+
+    .pill-red {
+      background: rgba(239, 68, 68, 0.16);
+      border: 1px solid rgba(239, 68, 68, 0.35);
+      color: #f87171;
+    }
+
+    .pill-blue {
+      background: rgba(59, 130, 246, 0.16);
+      border: 1px solid rgba(59, 130, 246, 0.35);
+      color: #60a5fa;
+    }
+
+    .dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    /* Button styles matching landing page */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-family: var(--font-body);
+      font-size: 13.5px;
+      font-weight: 600;
+      padding: 9px 20px;
+      border-radius: 9999px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      border: 1px solid transparent;
+      white-space: nowrap;
+    }
+
+    .btn-cream {
+      background: var(--cream);
+      color: #0c1424;
+      border-color: var(--cream);
+      box-shadow: 0 4px 14px rgba(0,0,0,0.3);
+    }
+
+    .btn-cream:hover {
+      background: var(--cream-hover);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(242, 238, 227, 0.25);
+    }
+
+    .btn-glass {
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--cream);
+      border-color: var(--border-glass-bright);
+      backdrop-filter: blur(12px);
+    }
+
+    .btn-glass:hover {
+      background: rgba(255, 255, 255, 0.12);
+      border-color: rgba(255, 255, 255, 0.35);
+      transform: translateY(-2px);
+    }
+
+    .btn-sm {
+      padding: 6px 14px;
+      font-size: 12px;
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none !important;
+    }
+
+    /* Navigation Tabs */
+    .nav-tabs {
+      display: flex;
+      gap: 10px;
+      margin: 28px 0 24px;
+      border-bottom: 1px solid var(--border-glass);
+      padding-bottom: 14px;
+      overflow-x: auto;
+    }
+
+    .tab-button {
+      background: rgba(14, 25, 45, 0.5);
+      border: 1px solid var(--border-glass);
+      color: var(--text-muted);
+      font-family: var(--font-body);
+      font-size: 13.5px;
+      font-weight: 600;
+      padding: 9px 18px;
+      border-radius: 9999px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+
+    .tab-button:hover {
+      color: var(--cream);
+      background: rgba(255, 255, 255, 0.08);
+      border-color: var(--border-glass-bright);
+    }
+
+    .tab-button.active {
+      color: #0c1424;
+      background: var(--cream);
+      border-color: var(--cream);
+      box-shadow: 0 4px 14px rgba(242, 238, 227, 0.2);
+    }
+
+    .tab-icon {
+      width: 14px;
+      height: 14px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 2;
+    }
+
+    /* Glass Panels */
+    .glass-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-glass);
+      border-radius: 18px;
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      padding: 26px;
+      margin-bottom: 24px;
+      position: relative;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.55);
+    }
+
+    .glass-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.22), transparent);
+    }
+
+    .section-tag {
+      font-family: var(--font-mono);
+      font-size: 11.5px;
+      letter-spacing: 1.4px;
+      text-transform: uppercase;
+      color: var(--accent-blue);
+      margin-bottom: 6px;
+    }
+
+    .section-title {
+      font-size: 24px;
+      font-weight: 800;
+      color: var(--cream);
+      letter-spacing: -0.5px;
+      margin-bottom: 8px;
+    }
+
+    .section-desc {
+      font-size: 14px;
+      color: var(--text-muted);
+      margin-bottom: 22px;
+      max-width: 720px;
+    }
+
+    /* Form Inputs */
+    .input-row {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .input-text {
+      flex: 1;
+      min-width: 260px;
+      background: rgba(7, 15, 30, 0.85);
+      border: 1px solid var(--border-glass);
+      border-radius: 12px;
+      padding: 12px 16px;
+      color: var(--cream);
+      font-family: var(--font-body);
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .input-text:focus {
+      border-color: var(--accent-blue);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+    }
+
+    .input-num {
+      width: 90px;
+      background: rgba(7, 15, 30, 0.85);
+      border: 1px solid var(--border-glass);
+      border-radius: 12px;
+      padding: 12px 14px;
+      color: var(--cream);
+      font-family: var(--font-body);
+      font-size: 14px;
+      outline: none;
+    }
+
+    textarea.input-text {
+      min-height: 110px;
+      resize: vertical;
+    }
+
+    /* Result Row matching landing page */
+    .row-card {
+      background: rgba(12, 23, 44, 0.65);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      border-radius: 14px;
+      padding: 16px 18px;
+      margin-top: 14px;
+      transition: all 0.2s;
+    }
+
+    .row-card:hover {
+      background: rgba(18, 33, 62, 0.75);
+      border-color: var(--border-glass-bright);
+    }
+
+    .row-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .row-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-dim);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .row-text {
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--text-main);
+      line-height: 1.45;
+      margin-bottom: 6px;
+    }
+
+    .row-footer {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--text-dim);
+      margin-top: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    /* Subtopic progress track */
+    .cov-track {
+      height: 6px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 999px;
+      overflow: hidden;
+      flex: 1;
+      margin: 0 12px;
+    }
+
+    .cov-bar {
+      height: 100%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #3b82f6, #93c5fd);
+      transition: width 0.6s ease;
+    }
+
+    /* Tables */
+    .table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--border-glass);
+      border-radius: 14px;
+      margin-top: 16px;
+    }
+
+    table.data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13.5px;
+      text-align: left;
+    }
+
+    table.data-table th {
+      background: rgba(7, 14, 28, 0.9);
+      padding: 12px 16px;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border-glass);
+      font-weight: 600;
+    }
+
+    table.data-table td {
+      padding: 12px 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      color: var(--text-main);
+    }
+
+    table.data-table tr:hover td {
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    /* Collection Grid */
+    .collection-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
+      gap: 16px;
+      margin-top: 20px;
+    }
+
+    .q-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-glass);
+      border-radius: 14px;
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: all 0.2s;
+    }
+
+    .q-card:hover {
+      background: var(--card-bg-hover);
+      border-color: var(--border-glass-bright);
+      transform: translateY(-2px);
+    }
+
+    .q-card-text {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-main);
+      margin-bottom: 14px;
+      line-height: 1.5;
+    }
+
+    .q-card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+      padding-top: 12px;
+    }
+
+    .tag-chip {
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+    }
+
+    .btn-delete {
+      background: transparent;
+      border: none;
+      color: var(--text-dim);
+      cursor: pointer;
+      padding: 6px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+
+    .btn-delete:hover {
+      color: var(--accent-red);
+      background: rgba(239, 68, 68, 0.12);
+    }
+
+    .btn-delete svg {
+      width: 15px;
+      height: 15px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 2;
+    }
+
+    /* Toast */
+    #toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: rgba(14, 26, 48, 0.95);
+      border: 1px solid var(--border-glass-bright);
+      padding: 12px 22px;
+      border-radius: 12px;
+      color: var(--cream);
+      font-size: 13.5px;
+      font-weight: 500;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.3s;
+      z-index: 1000;
+    }
+
+    #toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <!-- Clean Photo Cloud Sky Background -->
+  <div class="bg-sky"></div>
+  <div class="bg-halftone-overlay"></div>
+
+  <!-- Header -->
+  <header>
+    <div class="container header-inner">
+      <div class="header-left">
+        <a href="/" class="brand">
+          <svg class="brand-star" viewBox="0 0 24 24">
+            <path d="M12 0L14.4 8.6L23 11L14.4 13.4L12 22L9.6 13.4L1 11L9.6 8.6Z" />
+          </svg>
+          <span>DejaQ</span>
+        </a>
+        <a href="/" class="back-link">&larr; Back to Home</a>
+      </div>
+
+      <div class="header-right">
+        <span id="health-badge" class="pill pill-blue">
+          <span class="dot"></span> Online
+        </span>
+        <a href="/docs" target="_blank" class="btn btn-glass btn-sm">FastAPI Docs</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- Navigation Tabs without emojis -->
+    <div class="nav-tabs">
+      <button class="tab-button active" onclick="setTab('inspector')">
+        <svg class="tab-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        <span>Single Question Inspector</span>
+      </button>
+
+      <button class="tab-button" onclick="setTab('batch')">
+        <svg class="tab-icon" viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+        <span>Batch Audit</span>
+      </button>
+
+      <button class="tab-button" onclick="setTab('generator')">
+        <svg class="tab-icon" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+        <span>Coverage Studio</span>
+      </button>
+
+      <button class="tab-button" onclick="setTab('collection')">
+        <svg class="tab-icon" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path></svg>
+        <span>Question Bank (<span id="tab-bank-cnt">0</span>)</span>
+      </button>
+
+      <button class="tab-button" onclick="setTab('architecture')">
+        <svg class="tab-icon" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg>
+        <span>System &amp; Engine</span>
+      </button>
+    </div>
+
+    <!-- Section 1: Single Question Inspector -->
+    <div id="sec-inspector" class="tab-content">
+      <div class="glass-card">
+        <div class="section-tag">Independent Detector</div>
+        <h2 class="section-title">Single Question Deduplication Inspector</h2>
+        <p class="section-desc">Runs candidate through exact match, vector cosine similarity, and numeric safeguards. Transparently reports stage, score, and LLM judge reason.</p>
+
+        <div class="input-row">
+          <input id="insp-input" type="text" class="input-text" placeholder="e.g. The angle of incidence is 30°. What is the angle of reflection?" value="The angle of incidence is 30°. What is the angle of reflection?">
+          <button id="btn-insp-check" class="btn btn-cream" onclick="runInspectorCheck()">Run Check</button>
+        </div>
+
+        <div id="insp-result" style="margin-top: 18px;"></div>
+      </div>
+    </div>
+
+    <!-- Section 2: Batch Audit -->
+    <div id="sec-batch" class="tab-content" style="display: none;">
+      <div class="glass-card">
+        <div class="section-tag">Bulk Processing</div>
+        <h2 class="section-title">Batch Question Audit</h2>
+        <p class="section-desc">Audit multiple candidate questions at once via <code>POST /api/check/batch</code>. Ideal for auditing question banks or bulk problem set uploads.</p>
+
+        <textarea id="batch-input" class="input-text" style="width: 100%; height: 110px; margin-bottom: 14px;">What is reflection of light?
+Define the reflection of light.
+State Newton's second law of motion.
+The angle of incidence is 45°. What is the angle of reflection?</textarea>
+
+        <button id="btn-batch-check" class="btn btn-cream" onclick="runBatchAudit()">Audit Batch</button>
+
+        <div id="batch-result" style="margin-top: 18px;"></div>
+      </div>
+    </div>
+
+    <!-- Section 3: Coverage Studio -->
+    <div id="sec-generator" class="tab-content" style="display: none;">
+      <div class="glass-card">
+        <div class="section-tag">Prevention Pipeline</div>
+        <h2 class="section-title">Coverage-Aware Question Generator</h2>
+        <p class="section-desc">Plans subtopics, scores existing bank density, and directs LLM generation toward under-represented curriculum gaps with independent duplicate rejection.</p>
+
+        <div class="input-row">
+          <input id="gen-topic" type="text" class="input-text" placeholder="Enter topic..." value="reflection of light">
+          <input id="gen-count" type="number" class="input-num" min="1" max="15" value="5" title="Number of questions">
+          <button id="btn-gen-run" class="btn btn-cream" onclick="runGeneration()">Generate &amp; Dedup</button>
+        </div>
+
+        <div id="gen-result" style="margin-top: 18px;"></div>
+      </div>
+    </div>
+
+    <!-- Section 4: Question Bank Explorer -->
+    <div id="sec-collection" class="tab-content" style="display: none;">
+      <div class="glass-card">
+        <div style="display: flex; align-items: flex-end; justify-content: space-between; flex-wrap: wrap; gap: 16px; margin-bottom: 14px;">
+          <div>
+            <div class="section-tag">Live Repository</div>
+            <h2 class="section-title">Stored Question Bank (<span id="bank-count">0</span>)</h2>
+            <p class="section-desc" style="margin-bottom: 0;">Items stored in the bank. Delete or filter by metadata tags (tags never affect duplicate verdicts).</p>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <input id="tag-key" type="text" class="input-text" style="width: 140px; min-width: auto; padding: 8px 12px; font-size: 13px;" placeholder="Tag key (e.g. topic)">
+            <input id="tag-val" type="text" class="input-text" style="width: 140px; min-width: auto; padding: 8px 12px; font-size: 13px;" placeholder="Value (optional)">
+            <button class="btn btn-glass btn-sm" onclick="loadCollection()">Filter</button>
+          </div>
+        </div>
+
+        <div id="collection-list" class="collection-grid"></div>
+      </div>
+    </div>
+
+    <!-- Section 5: Architecture & Engine -->
+    <div id="sec-architecture" class="tab-content" style="display: none;">
+      <div class="glass-card">
+        <div class="section-tag">System Design</div>
+        <h2 class="section-title">Pipeline Architecture &amp; Safeguards</h2>
+        <p class="section-desc">DejaQ employs a 3-stage cheapest-first evaluation with independent coverage planning.</p>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-top: 20px;">
+          <div class="row-card">
+            <div class="pill pill-blue" style="margin-bottom: 8px;">STAGE 01 &middot; O(1) LOOKUP</div>
+            <h3 style="font-size: 16px; color: var(--cream); margin-bottom: 6px;">Exact Normalization</h3>
+            <p style="font-size: 13px; color: var(--text-muted); line-height: 1.5;">NFKC Unicode normalization, lowercase, punctuation stripping, and hash table lookup.</p>
+          </div>
+          <div class="row-card">
+            <div class="pill pill-blue" style="margin-bottom: 8px;">STAGE 02 &middot; FAST VECTORS</div>
+            <h3 style="font-size: 16px; color: var(--cream); margin-bottom: 6px;">Cosine + Numeric Guard</h3>
+            <p style="font-size: 13px; color: var(--text-muted); line-height: 1.5;"><code>bge-small-en-v1.5</code> FastEmbed embeddings. Numerical discrepancies force candidate to the judge or review.</p>
+          </div>
+          <div class="row-card">
+            <div class="pill pill-blue" style="margin-bottom: 8px;">STAGE 03 &middot; LLM JUDGE</div>
+            <h3 style="font-size: 16px; color: var(--cream); margin-bottom: 6px;">Borderline Resolution</h3>
+            <p style="font-size: 13px; color: var(--text-muted); line-height: 1.5;">Gemini Flash evaluates similarity band [0.75, 0.96) with strict task-differentiation rules.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <div id="toast"></div>
+
+  <script>
+    const $ = id => document.getElementById(id);
+    const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+    function showToast(msg) {
+      const t = $('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 3000);
+    }
+
+    function setTab(name) {
+      document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
+      document.querySelectorAll('.nav-tabs .tab-button').forEach(btn => btn.classList.remove('active'));
+
+      const sec = $('sec-' + name);
+      if (sec) sec.style.display = 'block';
+
+      const idx = ['inspector', 'batch', 'generator', 'collection', 'architecture'].indexOf(name);
+      if (idx !== -1) {
+        document.querySelectorAll('.nav-tabs .tab-button')[idx].classList.add('active');
+      }
+    }
+
+    function badge(v) {
+      if (v === 'different') return `<span class="pill pill-green"><span class="dot"></span> Different</span>`;
+      if (v === 'semantic_duplicate') return `<span class="pill pill-amber"><span class="dot"></span> Semantic Duplicate</span>`;
+      if (v === 'exact_duplicate') return `<span class="pill pill-red"><span class="dot"></span> Exact Duplicate</span>`;
+      return `<span class="pill pill-amber"><span class="dot"></span> Review Required</span>`;
+    }
+
+    async function runInspectorCheck() {
+      const q = $('insp-input').value.trim();
+      if (!q) return;
+
+      const btn = $('btn-insp-check');
+      btn.disabled = true;
+      btn.textContent = 'Checking...';
+
+      try {
+        const res = await fetch('/api/check', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ question: q })
+        });
+        const data = await res.json();
+        btn.disabled = false;
+        btn.textContent = 'Run Check';
+
+        const canAdd = data.verdict === 'different' || data.verdict === 'review';
+        const addBtn = canAdd
+          ? `<button class="btn btn-cream btn-sm" style="margin-top: 12px;" onclick="addQuestion('${esc(q)}', ${data.verdict === 'review'})">
+              Add to Bank ${data.verdict === 'review' ? '(Human Override)' : ''}
+             </button>`
+          : '';
+
+        const nbHtml = (data.neighbors || []).length
+          ? `<div style="margin-top: 14px; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 10px;">
+              <div style="font-size: 11px; text-transform: uppercase; color: var(--text-dim); margin-bottom: 6px;">Top Nearest Neighbors</div>
+              ${data.neighbors.map(n => `
+                <div style="display: flex; justify-content: space-between; font-size: 13px; color: var(--text-muted); margin-bottom: 4px;">
+                  <span>${esc(n.text)}</span>
+                  <span style="font-family: var(--font-mono); color: var(--text-dim);">${n.score.toFixed(3)}</span>
+                </div>
+              `).join('')}
+             </div>`
+          : '';
+
+        $('insp-result').innerHTML = `
+          <div class="row-card">
+            <div class="row-header">
+              <span class="row-label">&#65291; Decision Result</span>
+              ${badge(data.verdict)}
+            </div>
+            <div class="row-text">${esc(q)}</div>
+            ${data.match ? `<div style="font-size: 13.5px; color: var(--text-muted);">Closest Match: <strong>${esc(data.match)}</strong></div>` : ''}
+            ${data.reason ? `<div style="font-size: 13px; color: var(--text-dim); margin-top: 4px;">Judge Rationale: <em>${esc(data.reason)}</em></div>` : ''}
+            <div class="row-footer">
+              <span>Score: ${data.score.toFixed(3)}</span>
+              <span>&middot;</span>
+              <span>Stage: ${esc(data.stage)}</span>
+              ${data.numeric_guard ? '&middot; <span class="pill pill-blue" style="font-size: 10px;">Numeric Guard Triggered</span>' : ''}
+            </div>
+            ${nbHtml}
+            ${addBtn}
+          </div>
+        `;
+      } catch (e) {
+        btn.disabled = false;
+        btn.textContent = 'Run Check';
+        $('insp-result').innerHTML = `<div style="color: var(--accent-red);">Error checking question.</div>`;
+      }
+    }
+
+    async function runBatchAudit() {
+      const text = $('batch-input').value.trim();
+      const lines = text.split('\n').map(l => l.trim()).filter(l => l.length >= 3);
+      if (!lines.length) return;
+
+      const btn = $('btn-batch-check');
+      btn.disabled = true;
+      btn.textContent = 'Auditing...';
+
+      try {
+        const res = await fetch('/api/check/batch', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ questions: lines })
+        });
+        const data = await res.json();
+        btn.disabled = false;
+        btn.textContent = 'Audit Batch';
+
+        $('batch-result').innerHTML = `
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Candidate Question</th>
+                  <th>Verdict</th>
+                  <th>Score</th>
+                  <th>Stage</th>
+                  <th>Matched In Bank</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${data.map((r, i) => `
+                  <tr>
+                    <td><strong>${esc(lines[i])}</strong></td>
+                    <td>${badge(r.verdict)}</td>
+                    <td style="font-family: var(--font-mono);">${r.score.toFixed(3)}</td>
+                    <td>${esc(r.stage)}</td>
+                    <td>${r.match ? esc(r.match) : '<span style="color: var(--text-dim);">&mdash;</span>'}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        `;
+      } catch (e) {
+        btn.disabled = false;
+        btn.textContent = 'Audit Batch';
+        $('batch-result').innerHTML = `<div style="color: var(--accent-red);">Audit failed.</div>`;
+      }
+    }
+
+    async function runGeneration() {
+      const topic = $('gen-topic').value.trim();
+      const n = +$('gen-count').value;
+      if (!topic) return;
+
+      const btn = $('btn-gen-run');
+      btn.disabled = true;
+      btn.textContent = 'Generating...';
+      $('gen-result').innerHTML = `<p style="color: var(--text-muted); font-size: 13.5px;">Analyzing subtopic density and writing candidates...</p>`;
+
+      try {
+        const res = await fetch('/api/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ topic, n })
+        });
+        const data = await res.json();
+        btn.disabled = false;
+        btn.textContent = 'Generate & Dedup';
+
+        let planHtml = '';
+        if (data.plan && data.plan.length) {
+          planHtml = `
+            <div style="margin-bottom: 20px;">
+              <h4 style="font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--cream); margin-bottom: 10px;">Subtopic Coverage Plan</h4>
+              <div class="table-wrap">
+                <table class="data-table">
+                  <thead><tr><th>Subtopic</th><th>Coverage Density</th></tr></thead>
+                  <tbody>
+                    ${data.plan.map(p => `
+                      <tr>
+                        <td>${esc(p.subtopic)}</td>
+                        <td>
+                          <div style="display: flex; align-items: center;">
+                            <div class="cov-track"><div class="cov-bar" style="width: ${Math.round(p.coverage * 100)}%;"></div></div>
+                            <span style="font-family: var(--font-mono); font-size: 11px;">${p.coverage.toFixed(3)}</span>
+                          </div>
+                        </td>
+                      </tr>
+                    `).join('')}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          `;
+        }
+
+        const accHtml = (data.accepted || []).map(a => `
+          <div class="row-card" style="border-left: 3px solid var(--accent-green); margin-top: 8px;">
+            <div class="row-header">
+              <span class="row-text" style="font-weight: 600;">${esc(a.question)}</span>
+              ${badge(a.verdict)}
+            </div>
+            <div class="row-footer">Score: ${a.score.toFixed(3)} &middot; Stage: ${esc(a.stage)}</div>
+          </div>
+        `).join('');
+
+        const rejHtml = (data.rejected || []).map(r => `
+          <div class="row-card" style="border-left: 3px solid var(--accent-amber); margin-top: 8px;">
+            <div class="row-header">
+              <span class="row-text" style="color: var(--text-muted);">${esc(r.question)}</span>
+              ${badge(r.verdict)}
+            </div>
+            <div class="row-footer">
+              ${r.match ? `Matched: "${esc(r.match)}" &middot; ` : ''}
+              Score: ${r.score.toFixed(3)} &middot; Stage: ${esc(r.stage)}
+            </div>
+          </div>
+        `).join('');
+
+        $('gen-result').innerHTML = `
+          ${planHtml}
+          <h4 style="margin: 20px 0 10px; color: var(--cream);">Accepted Questions (${(data.accepted || []).length})</h4>
+          ${accHtml || '<p style="color: var(--text-dim); font-size: 13.5px;">None accepted in this round.</p>'}
+          <h4 style="margin: 20px 0 10px; color: var(--cream);">Rejected Candidates (${(data.rejected || []).length})</h4>
+          ${rejHtml || '<p style="color: var(--text-dim); font-size: 13.5px;">No duplicates detected.</p>'}
+        `;
+
+        loadCollection();
+      } catch (e) {
+        btn.disabled = false;
+        btn.textContent = 'Generate & Dedup';
+        $('gen-result').innerHTML = `<div style="color: var(--accent-red);">Generation error.</div>`;
+      }
+    }
+
+    async function loadCollection() {
+      const k = $('tag-key').value.trim();
+      const v = $('tag-val').value.trim();
+      const p = new URLSearchParams();
+      if (k) p.set('tag_key', k);
+      if (v) p.set('tag_value', v);
+
+      try {
+        const res = await fetch('/api/questions?' + p.toString());
+        const data = await res.json();
+
+        $('bank-count').textContent = data.length;
+        $('tab-bank-cnt').textContent = data.length;
+
+        $('collection-list').innerHTML = data.map(item => `
+          <div class="q-card">
+            <div class="q-card-text">${esc(item.question)}</div>
+            <div class="q-card-footer">
+              <div style="display: flex; gap: 4px; flex-wrap: wrap;">
+                ${Object.entries(item.tags || {}).map(([tk, tv]) => `
+                  <span class="tag-chip">${esc(tk)}: ${esc(tv)}</span>
+                `).join('')}
+              </div>
+              <button class="btn-delete" onclick="deleteQuestion('${esc(item.id)}')" title="Delete from bank">
+                <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+              </button>
+            </div>
+          </div>
+        `).join('') || '<div style="color: var(--text-dim); font-size: 13.5px;">No questions found in bank.</div>';
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    async function deleteQuestion(id) {
+      if (!confirm('Permanently remove this question from the bank?')) return;
+      try {
+        const res = await fetch('/api/questions/' + id, { method: 'DELETE' });
+        if (res.ok) {
+          showToast('Question deleted');
+          loadCollection();
+        } else {
+          showToast('Failed to delete question');
+        }
+      } catch (e) {
+        showToast('Error deleting question');
+      }
+    }
+
+    async function addQuestion(question, force = false) {
+      try {
+        const res = await fetch('/api/questions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ question, tags: { source: 'dashboard' }, force })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          showToast('Question added to bank!');
+          loadCollection();
+          runInspectorCheck();
+        } else {
+          showToast('Blocked: ' + ((data.detail && data.detail.verdict) || 'Duplicate detected'));
+        }
+      } catch (e) {
+        showToast('Error adding question');
+      }
+    }
+
+    async function checkHealth() {
+      try {
+        const res = await fetch('/api/health');
+        const data = await res.json();
+        $('health-badge').innerHTML = `<span class="dot"></span> ${data.llm ? 'LLM Connected' : 'Local FastEmbed'}`;
+        $('bank-count').textContent = data.questions;
+        $('tab-bank-cnt').textContent = data.questions;
+      } catch (e) {}
+    }
+
+    if (window.location.hash) {
+      const tabName = window.location.hash.replace('#', '');
+      if (['inspector', 'batch', 'generator', 'collection', 'architecture'].includes(tabName)) {
+        setTab(tabName);
+      }
+    }
+
+    checkHealth();
+    loadCollection();
+  </script>
+</body>
+</html>

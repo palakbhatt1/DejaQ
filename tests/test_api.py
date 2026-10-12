@@ -37,3 +37,32 @@ def test_tag_filter_is_filter_only():
 
 def test_validation():
     assert client().post("/api/check", json={"question": ""}).status_code == 422
+
+
+def test_batch_check():
+    c = client()
+    c.post("/api/questions", json={"question": "What is reflection of light?"})
+    r = c.post("/api/check/batch", json={"questions": [
+        "What is reflection of light?",
+        "State Newton's third law of motion."
+    ]})
+    assert r.status_code == 200
+    res = r.json()
+    assert len(res) == 2
+    assert res[0]["verdict"] == "exact_duplicate"
+    assert res[1]["verdict"] == "different"
+
+
+def test_delete_question():
+    c = client()
+    added = c.post("/api/questions", json={"question": "What is reflection of light?"}).json()
+    qid = added["question"]["id"]
+    assert len(c.get("/api/questions").json()) == 1
+    
+    # Delete non-existent
+    assert c.delete("/api/questions/fake123").status_code == 404
+    
+    # Delete valid
+    del_r = c.delete(f"/api/questions/{qid}")
+    assert del_r.status_code == 200 and del_r.json()["status"] == "deleted"
+    assert len(c.get("/api/questions").json()) == 0

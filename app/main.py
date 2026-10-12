@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 from typing import Any
 
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
@@ -18,6 +19,10 @@ SEED_PATH = "data/seed_questions.json"
 
 class CheckReq(BaseModel):
     question: str = Field(min_length=3, max_length=500)
+
+
+class BatchCheckReq(BaseModel):
+    questions: list[str] = Field(min_length=1, max_length=100)
 
 
 class GenReq(BaseModel):
@@ -52,6 +57,10 @@ def create_app(store: Store | None = None, seed: bool = True) -> FastAPI:
     def _check(b: CheckReq):
         return check(store, b.question)
 
+    @app.post("/api/check/batch")
+    def _check_batch(b: BatchCheckReq):
+        return [check(store, q) for q in b.questions]
+
     @app.post("/api/generate")
     def _generate(b: GenReq):
         return generate(store, b.topic, b.n)
@@ -63,10 +72,20 @@ def create_app(store: Store | None = None, seed: bool = True) -> FastAPI:
             raise HTTPException(409, detail=r)   # duplicates are never added; `review` needs force
         return {"question": store.add(b.question, b.tags), "check": r}
 
+    @app.delete("/api/questions/{qid}")
+    def _delete(qid: str):
+        if not store.delete(qid):
+            raise HTTPException(404, detail="Question not found")
+        return {"status": "deleted", "id": qid}
+
     @app.get("/api/questions")
     def _list(tag_key: str | None = None, tag_value: str | None = None):
         return [{"id": i["id"], "question": i["text"], "tags": i["tags"]}
                 for i in store.filter(tag_key, tag_value)]
+
+    @app.get("/dashboard")
+    def _dashboard_page():
+        return FileResponse("static/dashboard.html")
 
     if os.path.isdir("static"):
         app.mount("/", StaticFiles(directory="static", html=True), name="ui")
