@@ -151,12 +151,12 @@
     /* Hero Center Stage */
     .hero-main {
       display: grid;
-      grid-template-columns: 0.95fr 1.25fr;
-      gap: clamp(24px, 4vw, 56px);
+      grid-template-columns: 0.9fr 1.25fr;
+      gap: clamp(24px, 4vw, 52px);
       align-items: center;
       flex: 1;
       min-height: 0;
-      margin: 8px 0;
+      margin: 6px 0;
     }
 
     /* Left Copy Column */
@@ -227,7 +227,7 @@
       padding-left: 1px;
     }
 
-    /* Right Interactive Showcase Assembly */
+    /* Right 3D Showcase Assembly */
     .hero-showcase {
       display: flex;
       flex-direction: column;
@@ -237,38 +237,68 @@
 
     .showcase-container {
       width: 100%;
-      max-width: 680px;
+      max-width: 710px;
       position: relative;
+      perspective: 1200px;
+      perspective-origin: 40% 50%;
     }
 
-    /* Main Frosted Glass Card enclosing Detection and Subtopic panels */
-    .glass-assembly {
-      display: grid;
-      grid-template-columns: 1fr 200px;
+    /* The 3D Tilted Stage */
+    .showcase-3d-stage {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      transform: rotateX(6deg) rotateY(-13deg) rotateZ(2deg);
+      transform-style: preserve-3d;
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      filter: drop-shadow(-20px 30px 50px rgba(0, 0, 0, 0.75));
+    }
+
+    /* Main Left 3D Detector Card */
+    .main-detector-3d {
+      flex: 1;
       background: var(--card-bg);
-      border: 1px solid var(--border-glass);
+      border: 1px solid rgba(255, 255, 255, 0.18);
       border-radius: 20px;
       backdrop-filter: blur(24px);
       -webkit-backdrop-filter: blur(24px);
-      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6);
+      padding: 14px 18px 16px;
       position: relative;
-      overflow: hidden;
-    }
-
-    .glass-assembly::before {
-      content: '';
-      position: absolute;
-      top: 0; left: 0; right: 0; height: 1px;
-      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.28), transparent);
-    }
-
-    /* Left Detection Panel */
-    .panel-detector {
-      padding: 16px 18px;
-      border-right: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 
+        inset 0 1px 2px rgba(255, 255, 255, 0.45),
+        inset 0 0 20px rgba(78, 140, 255, 0.08);
+      transform-style: preserve-3d;
       display: flex;
       flex-direction: column;
       gap: 10px;
+    }
+
+    /* Specular Light Reflection Bar at Top Center */
+    .specular-highlight {
+      width: 120px;
+      height: 3px;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.75), transparent);
+      border-radius: 999px;
+      margin: 0 auto 4px;
+      box-shadow: 0 0 10px rgba(255, 255, 255, 0.6);
+      transform: translateZ(10px);
+    }
+
+    /* Right 3D Subtopic Coverage Card */
+    .coverage-panel-3d {
+      width: 215px;
+      background: rgba(7, 16, 34, 0.75);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: 18px;
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      padding: 16px 14px;
+      position: relative;
+      box-shadow: 
+        inset 0 1px 2px rgba(255, 255, 255, 0.35),
+        inset 0 0 15px rgba(78, 140, 255, 0.06);
+      transform-style: preserve-3d;
+      flex-shrink: 0;
     }
 
     /* Search Bar */
@@ -281,6 +311,7 @@
       border-radius: 12px;
       padding: 8px 12px;
       transition: border-color 0.2s;
+      transform: translateZ(12px);
     }
 
     .search-bar:focus-within {
@@ -326,18 +357,21 @@
       color: #0c1424;
     }
 
-    /* Detection Item Cards */
+    /* Detection Item Cards with Layered 3D Depth */
     .card-item {
       background: var(--inner-card-bg);
-      border: 1px solid rgba(255, 255, 255, 0.07);
+      border: 1px solid rgba(255, 255, 255, 0.08);
       border-radius: 12px;
       padding: 10px 14px;
       transition: all 0.2s;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.1);
+      transform: translateZ(8px);
     }
 
     .card-item:hover {
       background: rgba(18, 34, 68, 0.75);
       border-color: var(--border-glass-bright);
+      transform: translateZ(14px);
     }
 
     .card-item-header {
@@ -425,20 +459,13 @@
       font-size: 9px;
     }
 
-    /* Right Subtopic Coverage Panel */
-    .panel-coverage {
-      padding: 16px;
-      background: rgba(7, 16, 32, 0.7);
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-    }
-
+    /* Coverage Panel Details */
     .coverage-title {
       font-size: 12px;
       font-weight: 700;
       color: #ffffff;
       margin-bottom: 10px;
+      transform: translateZ(8px);
     }
 
     .cov-item {
@@ -447,6 +474,7 @@
       justify-content: space-between;
       margin-bottom: 8px;
       font-size: 11px;
+      transform: translateZ(6px);
     }
 
     .cov-item:last-child {
@@ -493,7 +521,7 @@
     .callout-wrapper {
       position: relative;
       margin-top: 14px;
-      width: calc(100% - 20px);
+      width: 82%;
     }
 
     .callout-star-badge {
@@ -561,15 +589,15 @@
       .hero-title { font-size: 40px; margin-bottom: 12px; }
       .hero-subtitle { margin-bottom: 18px; }
       .page-shell { padding: 12px 32px 14px; }
-      .panel-detector { padding: 12px 14px; gap: 8px; }
+      .main-detector-3d { padding: 10px 14px; gap: 8px; }
       .card-item { padding: 8px 12px; }
       .callout-banner { padding: 10px 12px; }
     }
 
     @media (max-width: 980px) {
       .hero-main { grid-template-columns: 1fr; }
-      .glass-assembly { grid-template-columns: 1fr; }
-      .panel-coverage { display: none; }
+      .showcase-3d-stage { flex-direction: column; transform: none; }
+      .coverage-panel-3d { display: none; }
       .nav-links { display: none; }
     }
   </style>
@@ -627,13 +655,16 @@
         </div>
       </div>
 
-      <!-- Right Column: Interactive Glass Card Assembly & Callout -->
+      <!-- Right Column: 3D Interactive Showcase & Callout -->
       <div class="hero-showcase">
         <div class="showcase-container">
-          <!-- Glass Card Assembly -->
-          <div class="glass-assembly">
-            <!-- Left Detection Panel -->
-            <div class="panel-detector">
+          <!-- 3D Perspective Stage -->
+          <div class="showcase-3d-stage" id="showcase-stage">
+            <!-- Left 3D Detector Card -->
+            <div class="main-detector-3d">
+              <!-- Top Specular Highlight Reflection Pill -->
+              <div class="specular-highlight"></div>
+
               <!-- Search Input Bar -->
               <div class="search-bar">
                 <svg class="search-icon" viewBox="0 0 24 24">
@@ -690,8 +721,8 @@
               </div>
             </div>
 
-            <!-- Right Subtopic Coverage Panel -->
-            <div class="panel-coverage">
+            <!-- Right 3D Subtopic Coverage Card -->
+            <div class="coverage-panel-3d">
               <div class="coverage-title">Subtopic Coverage</div>
 
               <div class="cov-item">
@@ -749,6 +780,23 @@
 
   <script>
     const $ = id => document.getElementById(id);
+
+    // Dynamic 3D Parallax Tilt Effect tracking cursor
+    const stage = $('showcase-stage');
+    if (stage) {
+      window.addEventListener('mousemove', (e) => {
+        const normX = (e.clientX / window.innerWidth) - 0.5;
+        const normY = (e.clientY / window.innerHeight) - 0.5;
+        const rotX = 6 - (normY * 8);
+        const rotY = -13 + (normX * 10);
+        stage.style.transform = `rotateX(${rotX.toFixed(2)}deg) rotateY(${rotY.toFixed(2)}deg) rotateZ(2deg)`;
+      });
+
+      // Reset smoothly on mouse leave
+      window.addEventListener('mouseleave', () => {
+        stage.style.transform = 'rotateX(6deg) rotateY(-13deg) rotateZ(2deg)';
+      });
+    }
 
     async function executeCheck() {
       const q = $('demo-input').value.trim();
