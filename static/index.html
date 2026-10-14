@@ -47,7 +47,7 @@
     .bg-sky {
       position: absolute;
       top: 0; left: 0; width: 100%; height: 100%;
-      background: url('/assets/hero_bg_full.jpg') center bottom / cover no-repeat;
+      background: url('assets/hero_bg_full.jpg') center bottom / cover no-repeat;
       opacity: 0.92;
       z-index: 0;
       pointer-events: none;
@@ -241,21 +241,23 @@
       position: relative;
     }
 
-    /* Fixed Static 3D Glass Slab: strictly locked in 3D, never moves on click/hover */
+    /* Fixed Static Downward 3D Glass Slab with Ultra-Glassified Aesthetics */
     .showcase-3d-slab {
       display: grid;
       grid-template-columns: 1fr 215px;
-      background: var(--card-bg);
-      border: 1px solid rgba(255, 255, 255, 0.2);
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(18, 38, 76, 0.55) 28%, rgba(6, 16, 38, 0.75) 75%, rgba(255, 255, 255, 0.08) 100%);
+      border: 1.5px solid rgba(255, 255, 255, 0.3);
       border-radius: 20px;
-      backdrop-filter: blur(24px);
-      -webkit-backdrop-filter: blur(24px);
+      backdrop-filter: blur(32px) saturate(190%) brightness(1.05);
+      -webkit-backdrop-filter: blur(32px) saturate(190%) brightness(1.05);
       box-shadow: 
-        -28px 38px 65px rgba(0, 0, 0, 0.8),
-        -10px 15px 30px rgba(0, 0, 0, 0.5),
-        inset 0 1px 2px rgba(255, 255, 255, 0.45),
-        inset 0 0 20px rgba(78, 140, 255, 0.08);
-      transform: perspective(1000px) rotateX(7deg) rotateY(-15deg) rotateZ(3deg);
+        -25px 35px 70px rgba(0, 0, 0, 0.85),
+        -5px 12px 25px rgba(0, 0, 0, 0.5),
+        inset 0 2px 2px rgba(255, 255, 255, 0.65),
+        inset 1px 0 2px rgba(255, 255, 255, 0.35),
+        inset 0 -1.5px 2px rgba(0, 0, 0, 0.4),
+        0 0 35px rgba(59, 130, 246, 0.18);
+      transform: perspective(1000px) rotateX(-6deg) rotateY(-12deg) rotateZ(-2.5deg);
       transform-style: preserve-3d;
       transform-origin: center center;
       position: relative;
@@ -264,17 +266,18 @@
     .showcase-3d-slab::before {
       content: '';
       position: absolute;
-      top: 0; left: 0; right: 0; height: 1px;
-      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.45), transparent);
+      top: 0; left: 0; right: 0; height: 1.5px;
+      background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.45) 20%, rgba(255, 255, 255, 0.95) 50%, rgba(255, 255, 255, 0.45) 80%, transparent 100%);
       border-top-left-radius: 20px;
       border-top-right-radius: 20px;
       pointer-events: none;
+      box-shadow: 0 0 8px rgba(255, 255, 255, 0.8);
     }
 
     /* Left Panel: Detection */
     .panel-detector {
       padding: 14px 18px 16px;
-      border-right: 1px solid rgba(255, 255, 255, 0.08);
+      border-right: 1px solid rgba(255, 255, 255, 0.12);
       border-top-left-radius: 20px;
       border-bottom-left-radius: 20px;
       display: flex;
@@ -285,34 +288,40 @@
 
     /* Specular Light Reflection Bar at Top Center */
     .specular-highlight {
-      width: 140px;
+      width: 150px;
       height: 3px;
-      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.8), transparent);
+      background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.9) 50%, transparent 100%);
       border-radius: 999px;
       margin: 0 auto 6px;
-      box-shadow: 0 0 10px rgba(255, 255, 255, 0.6);
+      box-shadow: 0 0 12px rgba(255, 255, 255, 0.8), 0 0 4px #ffffff;
     }
 
     /* Right Panel: Subtopic Coverage */
     .panel-coverage {
       padding: 18px 16px;
-      background: rgba(7, 16, 34, 0.5);
+      background: rgba(5, 12, 28, 0.52);
       border-top-right-radius: 20px;
       border-bottom-right-radius: 20px;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      box-shadow: inset 1px 0 0 rgba(255, 255, 255, 0.08);
     }
 
-    /* Search Bar */
+    /* Search Bar with Ultra-Glass effect */
     .search-bar {
       display: flex;
       align-items: center;
       gap: 10px;
-      background: rgba(6, 14, 28, 0.85);
-      border: 1px solid rgba(255, 255, 255, 0.14);
+      background: rgba(4, 10, 24, 0.78);
+      border: 1px solid rgba(255, 255, 255, 0.22);
       border-radius: 12px;
       padding: 8px 12px;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.2), 0 4px 12px rgba(0, 0, 0, 0.35);
       transition: border-color 0.2s, box-shadow 0.2s;
     }
 
@@ -359,19 +368,21 @@
       color: #0c1424;
     }
 
-    /* Detection Item Cards */
+    /* Detection Item Cards with Frosted Glass */
     .card-item {
-      background: var(--inner-card-bg);
-      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.14);
       border-radius: 12px;
       padding: 10px 14px;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.25);
       transition: background 0.2s, border-color 0.2s;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.1);
     }
 
     .card-item:hover {
-      background: rgba(18, 34, 68, 0.75);
-      border-color: var(--border-glass-bright);
+      background: rgba(255, 255, 255, 0.09);
+      border-color: rgba(255, 255, 255, 0.28);
     }
 
     .card-item-header {
@@ -515,11 +526,14 @@
       text-align: right;
     }
 
-    /* Bottom Callout Banner matching reference position under the cards */
+    /* Bottom Callout Banner positioned cleanly below the 3D card */
     .callout-wrapper {
       position: relative;
-      margin-top: 14px;
-      width: 82%;
+      margin-top: clamp(24px, 4.5vh, 60px);
+      margin-left: auto;
+      margin-right: 0;
+      width: 85%;
+      z-index: 5;
     }
 
     .callout-star-badge {
@@ -589,6 +603,7 @@
       .page-shell { padding: 12px 32px 14px; }
       .panel-detector { padding: 10px 14px; gap: 8px; }
       .card-item { padding: 8px 12px; }
+      .callout-wrapper { margin-top: 52px; margin-left: auto; width: 85%; }
       .callout-banner { padding: 10px 12px; }
     }
 
