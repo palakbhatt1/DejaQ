@@ -42,7 +42,7 @@ def create_app(store: Store | None = None, seed: bool = True) -> FastAPI:
     @asynccontextmanager
     async def lifespan(_):
         if seed and not store.items and os.path.exists(SEED_PATH):
-            with open(SEED_PATH) as f:
+            with open(SEED_PATH, encoding="utf-8") as f:
                 for q in json.load(f):
                     store.add(q["question"], q.get("tags"), persist=False)
         yield
@@ -63,7 +63,7 @@ def create_app(store: Store | None = None, seed: bool = True) -> FastAPI:
 
     @app.post("/api/generate")
     def _generate(b: GenReq):
-        return generate(store, b.topic, b.n)
+        return generate(store, b.topic, b.n, allow_fallback=True)
 
     @app.post("/api/questions")
     def _add(b: AddReq):
@@ -82,6 +82,14 @@ def create_app(store: Store | None = None, seed: bool = True) -> FastAPI:
     def _list(tag_key: str | None = None, tag_value: str | None = None):
         return [{"id": i["id"], "question": i["text"], "tags": i["tags"]}
                 for i in store.filter(tag_key, tag_value)]
+
+    @app.get("/api/benchmark")
+    def _benchmark():
+        benchmark_file = "data/benchmark.json"
+        if os.path.exists(benchmark_file):
+            with open(benchmark_file, encoding="utf-8") as f:
+                return json.load(f)
+        return {"error": "Benchmark data not found"}
 
     @app.get("/dashboard")
     def _dashboard_page():

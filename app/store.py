@@ -101,12 +101,12 @@ class Store:
     def _save(self):
         os.makedirs(os.path.dirname(self.path) or ".", exist_ok=True)
         tmp = self.path + ".tmp"
-        with open(tmp, "w") as f:
-            json.dump(self.items, f)
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(self.items, f, ensure_ascii=False)
         os.replace(tmp, self.path)
 
     def _load(self):
-        with open(self.path) as f:
+        with open(self.path, encoding="utf-8") as f:
             self.items = json.load(f)
         if self.items:
             self.vecs = embed([i["text"] for i in self.items])
