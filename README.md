@@ -1,4 +1,5 @@
 # DejaQ
+ [![Demo](https://img.shields.io/badge/Demo-Video-blue?style=flat-square&logo=google-drive&logoColor=white)](https://drive.google.com/file/d/1OB3NvtX0OBC1DMKy2zCqM8yaIS_M-L7r/view?usp=sharing)
 
 Question generation with semantic deduplication.
 
